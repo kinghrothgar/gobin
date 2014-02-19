@@ -13,3 +13,7 @@ deps:
     ref: master
     path: github.com/grooveshark/golib
 
+  - loc: ssh://hg@bitbucket.org/kardianos/osext
+    type: hg
+    ref: tip
+    path: bitbucket.org/kardianos/osext
