@@ -1,0 +1,15 @@
+---
+path: github.com/kinghrothgar/goblin
+deps:
+  - loc: launchpad.net/goyaml
+
+  - loc: https://github.com/bmizerany/pat.git
+    type: git
+    ref: master
+    path: github.com/bmizerany/pat
+
+  - loc: git@github.com:grooveshark/golib.git
+    type: git
+    ref: master
+    path: github.com/grooveshark/golib
+

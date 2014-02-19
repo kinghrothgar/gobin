@@ -3,9 +3,18 @@
 *.a
 *.so
 
+# Compiled program and configs
+goblin
+
+# Vim swap
+.*.sw[op]
+
 # Folders
 _obj
 _test
+
+# Goat lib folder
+.goat
 
 # Architecture specific extensions/prefixes
 *.[568vq]

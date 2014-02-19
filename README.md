@@ -1,4 +1,4 @@
-gobin
+goblin
 =====
 
-A pastebin web application focus at CLI support (sprunge inspired)
+A pastebin web application focused at CLI support (sprunge inspired)
