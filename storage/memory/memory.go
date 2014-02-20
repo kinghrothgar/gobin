@@ -2,17 +2,21 @@ package memory
 
 import (
 	"errors"
+	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	"sync"
+	"time"
 )
 
 type Gobs map[string]*storage.Gob
 type Hordes map[string]storage.Horde
+type UIDToHorde map[string]string
 
 type MemoryStore struct {
-	gobs   Gobs
-	hordes Hordes
-	lock   sync.RWMutex
+	gobs       Gobs
+	hordes     Hordes
+	uidToHorde UIDToHorde
+	lock       sync.RWMutex
 }
 
 func (memoryStore *MemoryStore) UIDExist(uid string) (bool, error) {
@@ -55,24 +59,26 @@ func (memoryStore *MemoryStore) GetHorde(hordeName string) (storage.Horde, error
 	memoryStore.lock.RLock()
 	defer memoryStore.lock.RUnlock()
 	if horde, ok := memoryStore.hordes[hordeName]; ok {
+		gslog.Debug("%+v", horde)
 		return horde, nil
 	}
 	return storage.Horde{}, nil
 }
 
-func (memoryStore *MemoryStore) AddToHorde(hordeName string, uid string) error {
+func (memoryStore *MemoryStore) AddUIDHorde(hordeName string, uid string) error {
 	memoryStore.lock.Lock()
 	defer memoryStore.lock.Unlock()
 	// TODO: do I need to do this
 	if horde, ok := memoryStore.hordes[hordeName]; ok {
-		horde[uid] = true
+		horde[uid] = time.Now()
 	} else {
-		memoryStore.hordes[hordeName] = storage.Horde{uid: true}
+		memoryStore.hordes[hordeName] = storage.Horde{uid: time.Now()}
 	}
+	memoryStore.uidToHorde[uid] = hordeName
 	return nil
 }
 
-func (memoryStore *MemoryStore) DelFromHorde(hordeName string, uid string) error {
+func (memoryStore *MemoryStore) DelUIDHorde(hordeName string, uid string) error {
 	memoryStore.lock.Lock()
 	defer memoryStore.lock.Unlock()
 	// TODO: should I even be checking if I'm really deleting?
@@ -84,6 +90,7 @@ func (memoryStore *MemoryStore) DelFromHorde(hordeName string, uid string) error
 		return errors.New("uid does not exist in horde")
 	}
 	delete(horde, uid)
+	delete(memoryStore.uidToHorde, uid)
 	return nil
 }
 
@@ -92,5 +99,7 @@ func (memoryStore *MemoryStore) Initialize(confStr string) error {
 	defer memoryStore.lock.Unlock()
 	memoryStore.gobs = Gobs{}
 	memoryStore.hordes = Hordes{}
+	memoryStore.hordes = Hordes{}
+	memoryStore.uidToHorde = UIDToHorde{}
 	return nil
 }

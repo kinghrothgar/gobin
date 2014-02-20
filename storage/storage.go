@@ -13,4 +13,4 @@ type Gob struct {
 	IP      net.IP
 }
 
-type Horde map[string]bool
+type Horde map[string]time.Time

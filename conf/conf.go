@@ -18,6 +18,7 @@ var (
 	ExeFolder string
 	UIDLen    int
 	StoreType string
+	Domain    string
 )
 
 func init() {
@@ -42,6 +43,7 @@ func Parse() error {
 
 	UIDLen = 4
 	StoreType = "MEMORY"
+	Domain = "127.0.0.1:3000"
 	return nil
 }
 

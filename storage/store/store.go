@@ -6,8 +6,6 @@ import (
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/kinghrothgar/goblin/storage/memory"
 	"net"
-	"net/http"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -22,8 +20,8 @@ type DataStore interface {
 	GetGob(string) (*storage.Gob, error)
 	DelGob(string) error
 	GetHorde(string) (storage.Horde, error)
-	AddToHorde(string, string) error
-	DelFromHorde(string, string) error
+	AddUIDHorde(string, string) error
+	DelUIDHorde(string, string) error
 	Initialize(string) error
 }
 
@@ -41,13 +39,9 @@ type FileStore interface {
 var (
 	dataStore DataStore
 	uidLen    int
-	alphaReg  = regexp.MustCompile("^[A-Za-z]+$")
 )
 
 func GetGob(uid string) ([]byte, string, error) {
-	if len(uid) > uidLen || !alphaReg.MatchString(uid) {
-		return nil, "", errors.New("invalid uid")
-	}
 	gob, err := dataStore.GetGob(uid)
 	if err != nil {
 		return nil, "", err
@@ -59,11 +53,26 @@ func PutGob(uid string, data []byte, ip net.IP) error {
 	gob := &storage.Gob{
 		UID:     uid,
 		Data:    data,
-		Type:    http.DetectContentType(data),
 		IP:      ip,
 		Created: time.Now(),
 	}
 	return dataStore.PutGob(gob)
+}
+
+// Should I return a Horde or just a map?
+func GetHorde(hordeName string) (UIDTimeList, error) {
+	horde, err := dataStore.GetHorde(hordeName)
+	if err != nil {
+		return UIDTimeList{}, err
+	}
+	return sortHordeByTime(horde), nil
+}
+
+func PutHordeGob(uid string, hordeName string, data []byte, ip net.IP) error {
+	if err := PutGob(uid, data, ip); err != nil {
+		return err
+	}
+	return dataStore.AddUIDHorde(hordeName, uid)
 }
 
 func Initialize(storeType string, confStr string, uidLength int) error {
@@ -77,7 +86,7 @@ func Initialize(storeType string, confStr string, uidLength int) error {
 	return dataStore.Initialize(confStr)
 }
 
-func GetRandUID() string {
+func GetNewUID() string {
 	bytes := make([]byte, uidLen)
 	rand.Read(bytes)
 	for i, b := range bytes {
@@ -85,7 +94,7 @@ func GetRandUID() string {
 	}
 	uid := string(bytes)
 	if exist, _ := dataStore.UIDExist(uid); exist {
-		return GetRandUID()
+		return GetNewUID()
 	}
 	return uid
 }

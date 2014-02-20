@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 )
 
 // To be set at build
@@ -34,14 +33,14 @@ func main() {
 	// Setup route handlers
 	mux := pat.New()
 	mux.Get("/", http.HandlerFunc(handler.GetRoot))
-	mux.Get("/:uid", http.HandlerFunc(handler.GetUID))
-	mux.Get("/:horde", http.HandlerFunc(handler.GetHorde))
-	mux.Get("/:horde/:uid", http.HandlerFunc(handler.GetHordeUID))
-	mux.Post("/", http.HandlerFunc(handler.PostRoot))
-	mux.Post("/:horde", http.HandlerFunc(handler.PostHorde))
+	// Could be horde or uid
+	mux.Get("/:uid", http.HandlerFunc(handler.GetGob))
+	mux.Get("/h/:horde", http.HandlerFunc(handler.GetHorde))
+	mux.Post("/", http.HandlerFunc(handler.PostGob))
+	mux.Post("/:horde", http.HandlerFunc(handler.PostHordeGob))
 	// idkey is and string that contains the id and possibly an api key
-	mux.Del("/:uidkey", http.HandlerFunc(handler.DelUID))
-	mux.Del("/:horde/:uidkey", http.HandlerFunc(handler.DelHordeUID))
+	// TODO: will it contain gets?
+	mux.Del("/:uidkey", http.HandlerFunc(handler.DelGob))
 
 	http.Handle("/", mux)
 
@@ -55,13 +54,10 @@ func main() {
 	// Set up listening for os signals
 	sigCh := make(chan os.Signal, 5)
 	// TODO: What signals for Windows if any?
-	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
-	for {
-		select {
-		case <-sigCh:
-			gslog.Info("Syscall recieved, shutting down...")
-			gslog.Flush()
-			os.Exit(0)
-		}
-	}
+	signal.Notify(sigCh, os.Interrupt, os.Kill)
+	<-sigCh
+	println("testing")
+	gslog.Info("Syscall recieved, shutting down...")
+	gslog.Flush()
+	os.Exit(0)
 }
