@@ -1,13 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/conf"
 	"github.com/kinghrothgar/goblin/storage/store"
 	"net"
 	"net/http"
 	"regexp"
-	"errors"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	//parse the multipart form in the request
-	err := r.ParseMultipartForm(100000)
+	err := r.ParseMultipartForm(10485760)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
@@ -51,7 +51,7 @@ func validateHordeName(w http.ResponseWriter, hordeName string) {
 }
 
 func formURL(uid string) string {
-	return "http://" + conf.Domain + "/" + uid
+	return "http://" + conf.Domain + "/" + uid + "\n"
 }
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {

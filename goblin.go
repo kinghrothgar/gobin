@@ -45,10 +45,9 @@ func main() {
 	mux.Del("/:uidkey", http.HandlerFunc(handler.DelGob))
 
 	http.Handle("/", mux)
-	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request){})
 
-	gslog.Info("Listening...")
-	if err := http.ListenAndServe(":6667", nil); err != nil {
+	gslog.Info("Listening on " + conf.Port + " ...")
+	if err := http.ListenAndServe(":"+conf.Port, nil); err != nil {
 		gslog.Error("ListenAndServe: %s", err)
 		gslog.Fatal("Failed to start server, exiting...")
 	}

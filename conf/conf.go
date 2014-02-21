@@ -19,6 +19,8 @@ var (
 	UIDLen    int
 	StoreType string
 	Domain    string
+	Favicon   string
+	Port      string
 )
 
 func init() {
@@ -44,6 +46,7 @@ func Parse() error {
 	UIDLen = 4
 	StoreType = "REDIS"
 	Domain = "gobin.io"
+	Port = "6667"
 	return nil
 }
 
