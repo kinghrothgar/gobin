@@ -7,7 +7,7 @@
 goblin
 
 # Vim swap
-.*.sw[op]
+.*.sw[opn]
 
 # Folders
 _obj
