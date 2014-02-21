@@ -42,8 +42,8 @@ func Parse() error {
 	}
 
 	UIDLen = 4
-	StoreType = "MEMORY"
-	Domain = "127.0.0.1:3000"
+	StoreType = "REDIS"
+	Domain = "gobin.io"
 	return nil
 }
 

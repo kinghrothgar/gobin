@@ -1,10 +1,12 @@
 package redis
 
 import (
+	"bytes"
 	"errors"
-	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/mediocregopher/radix/redis"
+	"github.com/grooveshark/golib/gslog"
+	realgob "encoding/gob"
 	"time"
 )
 
@@ -17,22 +19,47 @@ type RedisStore struct {
 }
 
 func (redisStore *RedisStore) UIDExist(uid string) (bool, error) {
-	if _, ok := redisStore.gobs[uid]; ok {
-		return true, nil
+	gslog.Debug("making redis get call")
+	reply := redisStore.Client.Cmd("GET", "gob:" + uid)
+	gslog.Debug("made redis get call")
+	if reply.Err != nil {
+		return false, reply.Err
 	}
-	return false, nil
+	if reply.Type == redis.NilReply {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
-	redisStore.gobs[gob.UID] = gob
-	return nil
+	buf := new(bytes.Buffer)
+	gobEnc := realgob.NewEncoder(buf)
+	if err := gobEnc.Encode(gob); err != nil {
+		return err
+	}
+	reply := redisStore.Client.Cmd("SET", "gob:" + gob.UID, buf.Bytes())
+	return reply.Err
 }
 
 func (redisStore *RedisStore) GetGob(uid string) (*storage.Gob, error) {
-	if gob, ok := redisStore.gobs[uid]; ok {
-		return gob, nil
+	reply := redisStore.Client.Cmd("GET", "gob:" + uid)
+	if reply.Err != nil {
+		return nil, reply.Err
 	}
-	return nil, errors.New("uid does not exist")
+	if reply.Type == redis.NilReply {
+		return nil, errors.New("uid does not exist")
+	}
+	b, err := reply.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	gob := &storage.Gob{}
+	buf := bytes.NewReader(b)
+	gobDec := realgob.NewDecoder(buf)
+	if err = gobDec.Decode(gob); err != nil {
+		return nil, err
+	}
+	return gob, nil
 }
 
 func (redisStore *RedisStore) DelGob(uid string) error {
@@ -40,47 +67,57 @@ func (redisStore *RedisStore) DelGob(uid string) error {
 	if exist, _ := redisStore.UIDExist(uid); !exist {
 		return errors.New("uid does not exist")
 	}
-	delete(redisStore.gobs, uid)
+	//delete(redisStore.gobs, uid)
 	return nil
 }
 
 func (redisStore *RedisStore) GetHorde(hordeName string) (storage.Horde, error) {
-	if horde, ok := redisStore.hordes[hordeName]; ok {
-		gslog.Debug("%+v", horde)
-		return horde, nil
+	reply := redisStore.Client.Cmd("HGETALL", "horde:" + hordeName)
+	if reply.Err != nil {
+		return nil, reply.Err
 	}
-	return storage.Horde{}, nil
+	if reply.Type == redis.NilReply {
+		return storage.Horde{}, nil
+	}
+	h, err := reply.Hash()
+	if err != nil {
+		return nil, err
+	}
+	horde := storage.Horde{}
+	for uid, created := range h {
+		t := time.Time{}
+		t.GobDecode([]byte(created))
+		horde[uid] = t
+	}
+	return horde, nil
 }
 
 func (redisStore *RedisStore) AddUIDHorde(hordeName string, uid string) error {
-	// TODO: do I need to do this
-	if horde, ok := redisStore.hordes[hordeName]; ok {
-		horde[uid] = time.Now()
-	} else {
-		redisStore.hordes[hordeName] = storage.Horde{uid: time.Now()}
+	createdBytes, _ := time.Now().GobEncode()
+	reply := redisStore.Client.Cmd("HMSET", "horde:" + hordeName, uid, string(createdBytes))
+	if reply.Err != nil {
+		return reply.Err
 	}
-	redisStore.uidToHorde[uid] = hordeName
-	return nil
+	reply = redisStore.Client.Cmd("SET", "uid.to.horde:" + uid, hordeName)
+	return reply.Err
 }
 
 func (redisStore *RedisStore) DelUIDHorde(hordeName string, uid string) error {
 	// TODO: should I even be checking if I'm really deleting?
-	horde, ok := redisStore.hordes[hordeName]
-	if !ok {
-		return errors.New("horde does not exist")
-	}
-	if _, ok = horde[uid]; !ok {
-		return errors.New("uid does not exist in horde")
-	}
-	delete(horde, uid)
-	delete(redisStore.uidToHorde, uid)
+	//horde, ok := redisStore.hordes[hordeName]
+	//if !ok {
+	//	return errors.New("horde does not exist")
+	//}
+	//if _, ok = horde[uid]; !ok {
+	//	return errors.New("uid does not exist in horde")
+	//}
+	//delete(horde, uid)
+	//delete(redisStore.uidToHorde, uid)
 	return nil
 }
 
 func (redisStore *RedisStore) Initialize(confStr string) error {
 	var err error
-	if r, err = redis.Dial("tcp", "127.0.0.1:6379"); err != nil {
-		return err
-	}
-	return nil
+	redisStore.Client, err = redis.Dial("tcp", "127.0.0.1:6666")
+	return err
 }

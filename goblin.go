@@ -22,13 +22,15 @@ func main() {
 		os.Exit(0)
 	}
 
+	gslog.Info("Goblin started [build commit: %s, build date: %s]", buildCommit, buildDate)
+
 	conf.Parse()
 	gslog.SetMinimumLevel(conf.LogLevel)
 	//gslog.SetLogFile(conf.LogFile)
 
-	store.Initialize(conf.StoreType, "", conf.UIDLen)
-
-	gslog.Info("Goblin started [build commit: %s, build date: %s]", buildCommit, buildDate)
+	if err := store.Initialize(conf.StoreType, "", conf.UIDLen); err != nil {
+		gslog.Fatal("failed to initialize storage with error: %s", err.Error())
+	}
 
 	// Setup route handlers
 	mux := pat.New()
@@ -43,10 +45,10 @@ func main() {
 	mux.Del("/:uidkey", http.HandlerFunc(handler.DelGob))
 
 	http.Handle("/", mux)
+	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request){})
 
 	gslog.Info("Listening...")
-	http.ListenAndServe(":3000", nil)
-	if err := http.ListenAndServe(":3000", nil); err != nil {
+	if err := http.ListenAndServe(":6667", nil); err != nil {
 		gslog.Error("ListenAndServe: %s", err)
 		gslog.Fatal("Failed to start server, exiting...")
 	}

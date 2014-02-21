@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"errors"
 )
 
 var (
@@ -27,15 +28,17 @@ func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	return []byte(str)
 }
 
-func validateUID(w http.ResponseWriter, uid string) {
+func validateUID(w http.ResponseWriter, uid string) error {
 	// This is so someone can't access a horde goblin
 	// by just puting the 'horde#uid' instead of 'horde/uid'
 	// and prevents a lookup if it's obviously crap
 	if len(uid) > conf.UIDLen || !alphaReg.MatchString(uid) {
-		gslog.Debug("invalid uid")
-		http.Error(w, "invalid uid", http.StatusBadRequest)
+		err := errors.New("invalid uid")
+		gslog.Debug(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
 	}
-	return
+	return nil
 }
 
 func validateHordeName(w http.ResponseWriter, hordeName string) {
@@ -52,19 +55,26 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetGob(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("GetGob called")
 	params := r.URL.Query()
 	uid := params.Get(":uid")
-	validateUID(w, uid)
-	data, _, err := store.GetGob(uid)
-	if err != nil {
-		gslog.Debug("id does not exist")
+	if err := validateUID(w, uid); err != nil {
+		gslog.Debug(err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	data, _, err := store.GetGob(uid)
+	if err != nil {
+		gslog.Debug("failed to get gob with error: " + err.Error())
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	gslog.Debug("GetGob writing data")
 	w.Write(data)
 }
 
 func GetHorde(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("GetHorde called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
 	uidTimeList, err := store.GetHorde(hordeName)
@@ -81,6 +91,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostGob(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("PostGob called")
 	gobData := getGobData(w, r)
 	uid := store.GetNewUID()
 	host, _, _ := net.SplitHostPort(r.RemoteAddr)
@@ -89,12 +100,14 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 	if err := store.PutGob(uid, gobData, ip); err != nil {
 		gslog.Debug("put gob failed with error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Write([]byte("http://" + conf.Domain + "/" + uid))
 }
 
 func PostHordeGob(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("PostHordeGob called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
 	validateHordeName(w, hordeName)
@@ -112,7 +125,9 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 }
 
 func DelGob(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("DelGob called")
 }
 
 func DelHordeGob(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("DelHordeGob called")
 }

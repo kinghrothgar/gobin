@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 	"errors"
 	"github.com/kinghrothgar/goblin/storage"
+	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage/memory"
+	"github.com/kinghrothgar/goblin/storage/redis"
 	"net"
 	"strings"
 	"time"
@@ -60,6 +62,7 @@ func PutGob(uid string, data []byte, ip net.IP) error {
 }
 
 // Should I return a Horde or just a map?
+// TODO: Have dataStore store the and return the hordes in a sorted list
 func GetHorde(hordeName string) (UIDTimeList, error) {
 	horde, err := dataStore.GetHorde(hordeName)
 	if err != nil {
@@ -80,6 +83,8 @@ func Initialize(storeType string, confStr string, uidLength int) error {
 	switch strings.ToUpper(storeType) {
 	case "MEMORY":
 		dataStore = new(memory.MemoryStore)
+	case "REDIS":
+		dataStore = new(redis.RedisStore)
 	default:
 		return errors.New("invalid store type")
 	}
@@ -93,7 +98,9 @@ func GetNewUID() string {
 		bytes[i] = ALPHA[b%byte(len(ALPHA))]
 	}
 	uid := string(bytes)
+	gslog.Debug("checking if " + uid + " exists")
 	if exist, _ := dataStore.UIDExist(uid); exist {
+		gslog.Debug(uid + " exists")
 		return GetNewUID()
 	}
 	return uid
