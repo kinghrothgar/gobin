@@ -50,8 +50,19 @@ func validateHordeName(w http.ResponseWriter, hordeName string) {
 	return
 }
 
+func formURL(uid string) string {
+	return "http://" + conf.Domain + "/" + uid
+}
+
 func GetRoot(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello"))
+	page := ""
+	page += "Welcome to GoBin, command line pastebin.\n"
+	page += "Backend using goblin written in go and redis\n\n"
+	page += "<command> | curl -F 'gob=<-' gobin.io\n"
+	page += "Or, to paste to a horde:\n"
+	page += "<command> | curl -F 'gob=<-' gobin.io/<horde>\n"
+	page += "Going to gobin.io/h/<horde> will list everything that has been pasted to it\n"
+	w.Write([]byte(page))
 }
 
 func GetGob(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +96,8 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 	}
 	page := ""
 	for _, uidTimePair := range uidTimeList {
-		page += "http://" + conf.Domain + "/" + uidTimePair.UID + "    " + uidTimePair.Time.String() + "\n"
+		url := formURL(uidTimePair.UID)
+		page += url + "    " + uidTimePair.Time.String() + "\n"
 	}
 	w.Write([]byte(page))
 }
@@ -103,7 +115,8 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("http://" + conf.Domain + "/" + uid))
+	url := formURL(uid)
+	w.Write([]byte(url))
 }
 
 func PostHordeGob(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +134,8 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	w.Write([]byte("http://" + conf.Domain + "/" + uid))
+	url := formURL(uid)
+	w.Write([]byte(url))
 }
 
 func DelGob(w http.ResponseWriter, r *http.Request) {
