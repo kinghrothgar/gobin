@@ -91,7 +91,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = templ.WriteHordePage(w, horde)
+	err = templ.WriteHordePage(w, hordeName, horde)
 	if err != nil {
 		gslog.Debug("failed to get horde with error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

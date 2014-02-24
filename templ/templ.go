@@ -8,6 +8,7 @@ import (
 
 type HordePage struct {
 	Domain string
+	Title  string
 	Horde  storage.Horde
 }
 
@@ -23,8 +24,8 @@ func Initialize(templatesPath string, confDomain string) error {
 	return err
 }
 
-func WriteHordePage(w http.ResponseWriter, horde storage.Horde) error {
-	p := &HordePage{Domain: domain, Horde: horde}
+func WriteHordePage(w http.ResponseWriter, hordeName string, horde storage.Horde) error {
+	p := &HordePage{Domain: domain, Title: "horde: " + hordeName, Horde: horde}
 	return templates.ExecuteTemplate(w, "hordePage", p)
 }
 
