@@ -68,29 +68,30 @@ func (memoryStore *MemoryStore) GetHorde(hordeName string) (storage.Horde, error
 func (memoryStore *MemoryStore) AddUIDHorde(hordeName string, uid string) error {
 	memoryStore.lock.Lock()
 	defer memoryStore.lock.Unlock()
-	// TODO: do I need to do this
+	now := time.Now()
+	uidCreated := &storage.UIDCreated{UID: uid, Created: now.String()}
 	if horde, ok := memoryStore.hordes[hordeName]; ok {
-		horde[uid] = time.Now()
+		horde = append(horde, uidCreated)
 	} else {
-		memoryStore.hordes[hordeName] = storage.Horde{uid: time.Now()}
+		memoryStore.hordes[hordeName] = storage.Horde{uidCreated}
 	}
 	memoryStore.uidToHorde[uid] = hordeName
 	return nil
 }
 
 func (memoryStore *MemoryStore) DelUIDHorde(hordeName string, uid string) error {
-	memoryStore.lock.Lock()
-	defer memoryStore.lock.Unlock()
-	// TODO: should I even be checking if I'm really deleting?
-	horde, ok := memoryStore.hordes[hordeName]
-	if !ok {
-		return errors.New("horde does not exist")
-	}
-	if _, ok = horde[uid]; !ok {
-		return errors.New("uid does not exist in horde")
-	}
-	delete(horde, uid)
-	delete(memoryStore.uidToHorde, uid)
+	//memoryStore.lock.Lock()
+	//defer memoryStore.lock.Unlock()
+	//// TODO: should I even be checking if I'm really deleting?
+	//horde, ok := memoryStore.hordes[hordeName]
+	//if !ok {
+	//	return errors.New("horde does not exist")
+	//}
+	//if _, ok = horde[uid]; !ok {
+	//	return errors.New("uid does not exist in horde")
+	//}
+	//delete(horde, uid)
+	//delete(memoryStore.uidToHorde, uid)
 	return nil
 }
 

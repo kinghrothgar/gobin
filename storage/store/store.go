@@ -3,8 +3,8 @@ package store
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/kinghrothgar/goblin/storage"
 	"github.com/grooveshark/golib/gslog"
+	"github.com/kinghrothgar/goblin/storage"
 	"github.com/kinghrothgar/goblin/storage/memory"
 	"github.com/kinghrothgar/goblin/storage/redis"
 	"net"
@@ -63,12 +63,12 @@ func PutGob(uid string, data []byte, ip net.IP) error {
 
 // Should I return a Horde or just a map?
 // TODO: Have dataStore store the and return the hordes in a sorted list
-func GetHorde(hordeName string) (UIDTimeList, error) {
+func GetHorde(hordeName string) (storage.Horde, error) {
 	horde, err := dataStore.GetHorde(hordeName)
 	if err != nil {
-		return UIDTimeList{}, err
+		return nil, err
 	}
-	return sortHordeByTime(horde), nil
+	return horde, nil
 }
 
 func PutHordeGob(uid string, hordeName string, data []byte, ip net.IP) error {

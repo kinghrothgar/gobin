@@ -2,17 +2,13 @@ package redis
 
 import (
 	"bytes"
+	realgob "encoding/gob"
 	"errors"
+	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/mediocregopher/radix/redis"
-	"github.com/grooveshark/golib/gslog"
-	realgob "encoding/gob"
 	"time"
 )
-
-type Gobs map[string]*storage.Gob
-type Hordes map[string]storage.Horde
-type UIDToHorde map[string]string
 
 type RedisStore struct {
 	Client *redis.Client
@@ -20,7 +16,7 @@ type RedisStore struct {
 
 func (redisStore *RedisStore) UIDExist(uid string) (bool, error) {
 	gslog.Debug("making redis get call")
-	reply := redisStore.Client.Cmd("GET", "gob:" + uid)
+	reply := redisStore.Client.Cmd("GET", "gob:"+uid)
 	gslog.Debug("made redis get call")
 	if reply.Err != nil {
 		return false, reply.Err
@@ -37,12 +33,12 @@ func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
 	if err := gobEnc.Encode(gob); err != nil {
 		return err
 	}
-	reply := redisStore.Client.Cmd("SET", "gob:" + gob.UID, buf.Bytes())
+	reply := redisStore.Client.Cmd("SET", "gob:"+gob.UID, buf.Bytes())
 	return reply.Err
 }
 
 func (redisStore *RedisStore) GetGob(uid string) (*storage.Gob, error) {
-	reply := redisStore.Client.Cmd("GET", "gob:" + uid)
+	reply := redisStore.Client.Cmd("GET", "gob:"+uid)
 	if reply.Err != nil {
 		return nil, reply.Err
 	}
@@ -63,7 +59,7 @@ func (redisStore *RedisStore) GetGob(uid string) (*storage.Gob, error) {
 }
 
 func (redisStore *RedisStore) DelGob(uid string) error {
-	// TODO: do I need to check?
+	//der TODO: do I need to check?
 	if exist, _ := redisStore.UIDExist(uid); !exist {
 		return errors.New("uid does not exist")
 	}
@@ -72,33 +68,44 @@ func (redisStore *RedisStore) DelGob(uid string) error {
 }
 
 func (redisStore *RedisStore) GetHorde(hordeName string) (storage.Horde, error) {
-	reply := redisStore.Client.Cmd("HGETALL", "horde:" + hordeName)
+	reply := redisStore.Client.Cmd("ZRANGE", "horde:"+hordeName, 0, -1)
 	if reply.Err != nil {
 		return nil, reply.Err
 	}
 	if reply.Type == redis.NilReply {
 		return storage.Horde{}, nil
 	}
-	h, err := reply.Hash()
+	h, err := reply.ListBytes()
 	if err != nil {
 		return nil, err
 	}
+	// TODO: Pre-allocate?
 	horde := storage.Horde{}
-	for uid, created := range h {
-		t := time.Time{}
-		t.GobDecode([]byte(created))
-		horde[uid] = t
+	for _, bs := range h {
+		uidCreated := &storage.UIDCreated{}
+		buf := bytes.NewReader(bs)
+		gobDec := realgob.NewDecoder(buf)
+		if err = gobDec.Decode(uidCreated); err != nil {
+			return nil, err
+		}
+		horde = append(horde, uidCreated)
 	}
 	return horde, nil
 }
 
 func (redisStore *RedisStore) AddUIDHorde(hordeName string, uid string) error {
-	createdBytes, _ := time.Now().GobEncode()
-	reply := redisStore.Client.Cmd("HMSET", "horde:" + hordeName, uid, string(createdBytes))
+	now := time.Now()
+	uidCreated := storage.UIDCreated{UID: uid, Created: now.String()}
+	buf := new(bytes.Buffer)
+	gobEnc := realgob.NewEncoder(buf)
+	if err := gobEnc.Encode(uidCreated); err != nil {
+		return err
+	}
+	reply := redisStore.Client.Cmd("ZADD", "horde:"+hordeName, now.UnixNano(), buf.Bytes())
 	if reply.Err != nil {
 		return reply.Err
 	}
-	reply = redisStore.Client.Cmd("SET", "uid.to.horde:" + uid, hordeName)
+	reply = redisStore.Client.Cmd("SET", "uid.to.horde:"+uid, hordeName)
 	return reply.Err
 }
 

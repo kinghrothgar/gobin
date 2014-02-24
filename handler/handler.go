@@ -5,6 +5,7 @@ import (
 	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/conf"
 	"github.com/kinghrothgar/goblin/storage/store"
+	"github.com/kinghrothgar/goblin/templ"
 	"net"
 	"net/http"
 	"regexp"
@@ -50,10 +51,6 @@ func validateHordeName(w http.ResponseWriter, hordeName string) {
 	return
 }
 
-func formURL(uid string) string {
-	return "http://" + conf.Domain + "/" + uid + "\n"
-}
-
 func GetRoot(w http.ResponseWriter, r *http.Request) {
 	page := ""
 	page += "Welcome to GoBin, command line pastebin.\n"
@@ -88,18 +85,18 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("GetHorde called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
-	uidTimeList, err := store.GetHorde(hordeName)
+	horde, err := store.GetHorde(hordeName)
 	if err != nil {
 		gslog.Debug("failed to get horde with error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	page := ""
-	for _, uidTimePair := range uidTimeList {
-		url := formURL(uidTimePair.UID)
-		page += url + "    " + uidTimePair.Time.String() + "\n"
+	err = templ.WriteHordePage(w, horde)
+	if err != nil {
+		gslog.Debug("failed to get horde with error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	w.Write([]byte(page))
 }
 
 func PostGob(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +112,7 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := formURL(uid)
+	url := templ.BuildURL(uid)
 	w.Write([]byte(url))
 }
 
@@ -134,7 +131,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	url := formURL(uid)
+	url := templ.BuildURL(uid)
 	w.Write([]byte(url))
 }
 
