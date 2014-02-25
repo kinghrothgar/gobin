@@ -13,6 +13,7 @@ import (
 
 var (
 	alphaReg = regexp.MustCompile("^[A-Za-z]+$")
+	browserUserAgentReg = regexp.MustCompile("Mozilla")
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
@@ -51,15 +52,48 @@ func validateHordeName(w http.ResponseWriter, hordeName string) {
 	return
 }
 
+// Request.RemoteAddress contains port, which we want to remove i.e.:
+// "[::1]:58292" => "[::1]"
+func ipAddrFromRemoteAddr(s string) string {
+	host, _, _ := net.SplitHostPort(s)
+	return net.ParseIP(host).String()
+}
+
+func getIpAddress(r *http.Request) string {
+        hdr := r.Header
+        hdrRealIp := hdr.Get("X-Real-Ip")
+        hdrForwardedFor := hdr.Get("X-Forwarded-For")
+        if hdrRealIp == "" && hdrForwardedFor == "" {
+                return ipAddrFromRemoteAddr(r.RemoteAddr)
+        }
+        //if hdrForwardedFor != "" {
+        //        // X-Forwarded-For is potentially a list of addresses separated with ","
+        //        parts := strings.Split(hdrForwardedFor, ",")
+        //        for i, p := range parts {
+        //                parts[i] = strings.TrimSpace(p)
+        //        }
+        //        // TODO: should return first non-local address
+        //        return parts[0]
+        //}
+        return net.ParseIP(hdrRealIp).String()
+}
+
+func getPageType(r *http.Request) string {
+	contentType := r.Header.Get("User-Agent")
+	pageType := "TEXT"
+	if browserUserAgentReg.MatchString(contentType) {
+		pageType = "HTML"
+	}
+	return pageType
+}
+
 func GetRoot(w http.ResponseWriter, r *http.Request) {
-	page := ""
-	page += "Welcome to GoBin, command line pastebin.\n"
-	page += "Backend using goblin written in go and redis\n\n"
-	page += "<command> | curl -F 'gob=<-' gobin.io\n"
-	page += "Or, to paste to a horde:\n"
-	page += "<command> | curl -F 'gob=<-' gobin.io/<horde>\n"
-	page += "Going to gobin.io/h/<horde> will list everything that has been pasted to it\n"
-	w.Write([]byte(page))
+	pageType := getPageType(r)
+	if err := templ.WriteHomePage(w, pageType); err != nil {
+		gslog.Debug("failed to write home with error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func GetGob(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +125,8 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = templ.WriteHordePage(w, hordeName, horde)
+	pageType := getPageType(r)
+	err = templ.WriteHordePage(w, pageType, hordeName, horde)
 	if err != nil {
 		gslog.Debug("failed to get horde with error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -101,11 +136,13 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 
 func PostGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("PostGob called")
+	gslog.Debug("Request has header: %+v", r.Header)
+	gslog.Debug("Request has host: %s", r.Host)
+	gslog.Debug("Request has requestURI: %s", r.RequestURI)
 	gobData := getGobData(w, r)
 	uid := store.GetNewUID()
-	host, _, _ := net.SplitHostPort(r.RemoteAddr)
-	ip := net.ParseIP(host)
-	gslog.Debug("uid: %s, host: %s, ip: %s", uid, host, ip)
+	ip := getIpAddress(r)
+	gslog.Debug("uid: %s, ip: %s", uid, ip)
 	if err := store.PutGob(uid, gobData, ip); err != nil {
 		gslog.Debug("put gob failed with error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -123,8 +160,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	validateHordeName(w, hordeName)
 	gobData := getGobData(w, r)
 	uid := store.GetNewUID()
-	host, _, _ := net.SplitHostPort(r.RemoteAddr)
-	ip := net.ParseIP(host)
+	ip := getIpAddress(r)
 	gslog.Debug("uid: %s, ip: %s", uid, ip)
 	if err := store.PutHordeGob(uid, hordeName, gobData, ip); err != nil {
 		gslog.Debug("put horde gob failed with error: %s", err.Error())

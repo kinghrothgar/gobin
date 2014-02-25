@@ -7,7 +7,6 @@ import (
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/kinghrothgar/goblin/storage/memory"
 	"github.com/kinghrothgar/goblin/storage/redis"
-	"net"
 	"strings"
 	"time"
 )
@@ -51,7 +50,7 @@ func GetGob(uid string) ([]byte, string, error) {
 	return gob.Data, gob.Type, err
 }
 
-func PutGob(uid string, data []byte, ip net.IP) error {
+func PutGob(uid string, data []byte, ip string) error {
 	gob := &storage.Gob{
 		UID:     uid,
 		Data:    data,
@@ -71,7 +70,7 @@ func GetHorde(hordeName string) (storage.Horde, error) {
 	return horde, nil
 }
 
-func PutHordeGob(uid string, hordeName string, data []byte, ip net.IP) error {
+func PutHordeGob(uid string, hordeName string, data []byte, ip string) error {
 	if err := PutGob(uid, data, ip); err != nil {
 		return err
 	}

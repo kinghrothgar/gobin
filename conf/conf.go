@@ -12,7 +12,8 @@ import (
 // Variables for flags
 var (
 	ConfPath      string
-	TemplatesPath string
+	HTMLTemplatesDir string
+	TextTemplatesDir string
 	StaticPath    string
 	LogLevel      string
 	LogFile       string
@@ -45,8 +46,12 @@ func Parse() error {
 		LogFile = filepath.Join(ExeFolder, "goblin.log")
 	}
 
-	if TemplatesPath == "" {
-		TemplatesPath = filepath.Join(ExeFolder, "templates.tmpl")
+	if HTMLTemplatesDir == "" {
+		HTMLTemplatesDir = filepath.Join(ExeFolder, "templates/html")
+	}
+
+	if TextTemplatesDir == "" {
+		TextTemplatesDir = filepath.Join(ExeFolder, "templates/text")
 	}
 
 	if StaticPath == "" {

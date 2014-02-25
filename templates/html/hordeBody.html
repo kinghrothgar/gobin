@@ -1,0 +1,7 @@
+<h2>{{.Title}}</h2>
+<hr>
+<pre>
+{{$domain := .Domain}}{{with .Horde}}{{range .}}<a href="http://{{$domain}}/{{.UID}}">{{.UID}}</a>    {{.Created}}
+{{end}}{{end}}
+</pre>
+<hr>

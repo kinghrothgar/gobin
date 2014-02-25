@@ -1,0 +1,2 @@
+{{define "hordePage"}}{{$domain := .Domain}}{{with .Horde}}{{range .}}http://{{$domain}}/{{.UID}}    {{.Created}}
+{{end}}{{end}}{{end}}

@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"net"
 	"time"
 )
 
@@ -10,7 +9,7 @@ type Gob struct {
 	Type    string
 	Data    []byte
 	Created time.Time
-	IP      net.IP
+	IP      string
 }
 
 // A data structure to hold a key/value pair.

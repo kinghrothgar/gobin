@@ -1,0 +1,43 @@
+{{define "header"}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <title>{{.}}</title>
+</head>
+{{end}}
+
+{{define "hordeBody"}}
+<body>
+<h2>{{.Title}}</h2>
+<hr>
+<pre>
+{{$domain := .Domain}}{{with .Horde}}{{range .}}<a href="http://{{$domain}}/{{.UID}}">{{.UID}}</a>    {{.Created}}
+{{end}}{{end}}
+</pre>
+<hr>
+</body>
+{{end}}
+
+{{define "hordePage"}}
+{{template "header" .Title}}
+{{template "hordeBody" .}}
+{{end}}
+
+{{define "homeBody"}}
+<body> 
+<pre>
+Welcome to GoBin, command line pastebin.
+Backend using goblin written in go and redis
+<command> | curl -F 'gob=<-' {{.Domain}}
+Or, to paste to a horde:
+<command> | curl -F 'gob=<-' {{.Domain}}/<horde>
+Going to gobin.io/h/<horde> will list everything that has been pasted to it
+</pre>
+</body>
+{{end}}
+
+{{define "homePage"}}
+{{template "header" .Title}}
+{{template "homeBody" . | unescaped}}
+{{end}}

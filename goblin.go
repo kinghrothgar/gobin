@@ -23,6 +23,10 @@ func serveSingle(pattern string, filename string) {
 	})
 }
 
+func test(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("ASDF"))
+}
+
 func main() {
 	if conf.ShowVers {
 		println("Commit: " + buildCommit)
@@ -39,7 +43,7 @@ func main() {
 	if err := store.Initialize(conf.StoreType, "", conf.UIDLen); err != nil {
 		gslog.Fatal("failed to initialize storage with error: %s", err.Error())
 	}
-	if err := templ.Initialize(conf.TemplatesPath, conf.Domain); err != nil {
+	if err := templ.Initialize(conf.HTMLTemplatesPath, conf.TextTemplatesPath, conf.Domain); err != nil {
 		gslog.Fatal("failed to initialize templates with error: %s", err.Error())
 	}
 
@@ -62,8 +66,8 @@ func main() {
 	serveSingle("/favicon.ico", filepath.Join(conf.StaticPath, "favicon.ico"))
 	serveSingle("/robots.txt", filepath.Join(conf.StaticPath, "robots.txt"))
 
-	// Normal resources
-	//http.Handle("/static", http.FileServer(http.Dir("./static/")))
+	// Normal static resources
+	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir(conf.StaticPath))))
 
 	gslog.Info("Listening on " + conf.Port + " ...")
 	if err := http.ListenAndServe(":"+conf.Port, nil); err != nil {
