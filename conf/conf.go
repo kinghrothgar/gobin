@@ -47,11 +47,11 @@ func Parse() error {
 	}
 
 	if HTMLTemplatesPath == "" {
-		HTMLTemplatesPath = filepath.Join(ExeFolder, "templates/textTemplates.tmpl")
+		HTMLTemplatesPath = filepath.Join(ExeFolder, "templates/htmlTemplates.tmpl")
 	}
 
 	if TextTemplatesPath == "" {
-		TextTemplatesPath = filepath.Join(ExeFolder, "templates/htmlTemplates.tmpl")
+		TextTemplatesPath = filepath.Join(ExeFolder, "templates/textTemplates.tmpl")
 	}
 
 	if StaticPath == "" {

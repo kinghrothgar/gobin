@@ -1,10 +1,38 @@
 {{define "hordePage"}}{{$domain := .Domain}}{{with .Horde}}{{range .}}http://{{$domain}}/{{.UID}}    {{.Created}}
 {{end}}{{end}}{{end}}
 
-{{define "homePage"}}Welcome to GoBin, command line pastebin.
-Backend using goblin written in go and redis
-<command> | curl -F 'gob=<-' {{.Domain}}
-Or, to paste to a horde:
-<command> | curl -F 'gob=<-' {{.Domain}}/<horde>
-Going to gobin.io/h/<horde> will list everything that has been pasted to it
+{{define "homePage"}}gobin(1)                             GOBIN                             gobin(1)
+
+NAME
+    gobin: command line pastebin implemented by goblin written in go.
+
+SYNOPSIS
+    Normal Upload:
+      <command> | curl -F 'gob=<-' http://{{.Domain}}
+    Horde Upload:
+      <command> | curl -F 'gob=<-' http://{{.Domain}}/<horde>
+
+DESCRIPTION
+    Uploads output of <command> to {{.Domain}} or {{.Domain}}/<horde> and returns
+    link to the gob.  All gobs pasted to a horde (a group of gobs or goblins) 
+    can be seen by going to http://{{.Domain}}/h/<horde>.  Works well with
+    images also.
+    Add ?<lang> to resulting url for line numbers and syntax highlighting.
+
+EXAMPLES
+    Normal Upload:
+    ~$ echo "Gobin is awesome" | curl -F 'gob=<-' http://{{.Domain}}
+       http://{{.Domain}}/VZiY
+    ~$ firefox http://{{.Domain}}/VZiY
+
+    Syntax Highlighting:
+    ~$ firefox http://{{.Domain}}/VZiY?go
+
+    Horde Upload:
+    ~$ cat hatersgonnahate.gif | curl -F 'gob=<-' http://{{.Domain}}/gifs
+       http://{{.Domain}}/VZiY
+    ~$ firefox http://{{.Domain}}/h/gifs
+
+SEE ALSO
+    http://github.com/kinghrothgar/goblin
 {{end}}

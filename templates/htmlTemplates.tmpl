@@ -20,8 +20,7 @@
 
 {{define "homeBody"}}
 <body>
-<span class="code-block">
-Welcome to GoBin, command line pastebin.
+<span class="code-block">Welcome to GoBin, command line pastebin.
 Backend using goblin written in go and redis
 &lt;command&gt; | curl -F &#39;gob=&lt;-&#39; {{.Domain}}
 Or, to paste to a horde:
@@ -38,3 +37,23 @@ Going to gobin.io/h/&lt;horde&gt; will list everything that has been pasted to i
 </html>
 {{end}}
 
+{{define "hordePage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+{{template "hordeBody" .}}
+</html>
+{{end}}
+
+{{define "gobPage"}}<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="/static/css/prism.css">
+    <title>{{.Title}}</title>
+</head>
+<body>
+    <pre><code class="language-{{.Language}}">{{.Data}}</code></pre>
+    <script src="/static/js/prism.js"></script>
+</body>
+</html>
+{{end}}

@@ -14,11 +14,12 @@ import (
 var (
 	alphaReg            = regexp.MustCompile("^[A-Za-z]+$")
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
+	textContentTypeReg  = regexp.MustCompile("^text/")
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	//parse the multipart form in the request
-	err := r.ParseMultipartForm(10485760)
+	err := r.ParseMultipartForm(11534336)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
@@ -79,15 +80,21 @@ func getIpAddress(r *http.Request) string {
 }
 
 func getPageType(r *http.Request) string {
-	contentType := r.Header.Get("User-Agent")
-	pageType := "TEXT"
-	if browserUserAgentReg.MatchString(contentType) {
-		pageType = "HTML"
+	userAgent := r.Header.Get("User-Agent")
+	params := r.URL.Query()
+	_, cli := params["cli"]
+	pageType := "HTML"
+	// If cli param present or Mozilla not found in the user agent, use plain text
+	if cli || !browserUserAgentReg.MatchString(userAgent) {
+		pageType = "TEXT"
 	}
 	return pageType
 }
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("GetRoot called")
+	params := r.URL.Query()
+	gslog.Debug("query params: %+v", params)
 	pageType := getPageType(r)
 	pageBytes, err := templ.GetHomePage(pageType)
 	if err != nil {
@@ -113,7 +120,31 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	gslog.Debug("GetGob writing data")
+	// Firgure out language parameter
+	lang := ""
+	for key, _ := range params {
+		// Skip the pat params that start with :
+		if key[0] == ':' {
+			continue
+		}
+		lang = key
+	}
+
+	if lang == "" {
+		gslog.Debug("GetGob writing data")
+		w.Write(data)
+		return
+	}
+	contentType := http.DetectContentType(data)
+	if textContentTypeReg.MatchString(contentType) {
+		data, err = templ.GetGobPage(lang, data)
+		if err != nil {
+			gslog.Debug("failed to get gob page with error: %s", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
 	w.Write(data)
 }
 

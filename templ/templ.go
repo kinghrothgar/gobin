@@ -20,6 +20,12 @@ type HomePage struct {
 	Title  string
 }
 
+type GobPage struct {
+	Title    string
+	Language string
+	Data     string
+}
+
 var (
 	htmlTemplates *htmlTemplate.Template
 	textTemplates *textTemplate.Template
@@ -64,6 +70,11 @@ func Initialize(htmlTemplatesPath string, textTemplatesPath string, confDomain s
 func GetHordePage(contentType string, hordeName string, horde storage.Horde) ([]byte, error) {
 	p := &HordePage{Domain: domain, Title: "horde: " + hordeName, Horde: horde}
 	return executeTemplate(contentType, "hordePage", p)
+}
+
+func GetGobPage(language string, data []byte) ([]byte, error) {
+	p := &GobPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: string(data)}
+	return executeTemplate("HTML", "gobPage", p)
 }
 
 func GetHomePage(contentType string) ([]byte, error) {
