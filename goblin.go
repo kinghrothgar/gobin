@@ -23,8 +23,9 @@ func serveSingle(pattern string, filename string) {
 	})
 }
 
-func test(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("ASDF"))
+func listenAndServer(addr string, c chan error) {
+	err := http.ListenAndServe(addr, nil)
+	c <- err
 }
 
 func main() {
@@ -70,18 +71,22 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir(conf.StaticPath))))
 
 	gslog.Info("Listening on " + conf.Port + " ...")
-	if err := http.ListenAndServe(":"+conf.Port, nil); err != nil {
-		gslog.Error("ListenAndServe: %s", err)
-		gslog.Fatal("Failed to start server, exiting...")
-	}
+	c := make(chan error)
+	go listenAndServer(":"+conf.Port, c)
 
 	// Set up listening for os signals
 	sigCh := make(chan os.Signal, 5)
 	// TODO: What signals for Windows if any?
 	signal.Notify(sigCh, os.Interrupt, os.Kill)
-	<-sigCh
-	println("testing")
-	gslog.Info("Syscall recieved, shutting down...")
-	gslog.Flush()
-	os.Exit(0)
+	for {
+		select {
+		case <-sigCh:
+			gslog.Info("Syscall recieved, shutting down...")
+			gslog.Flush()
+			os.Exit(0)
+		case err := <-c:
+			gslog.Error("ListenAndServe: %s", err)
+			gslog.Fatal("Failed to start server, exiting...")
+		}
+	}
 }
