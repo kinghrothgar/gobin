@@ -16,6 +16,9 @@ _test
 # Goat lib folder
 .goat
 
+# Prism folder
+static/prism
+
 # Architecture specific extensions/prefixes
 *.[568vq]
 [568vq].out
