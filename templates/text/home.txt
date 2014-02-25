@@ -1,7 +1,0 @@
-{{define "homePage"}}Welcome to GoBin, command line pastebin.
-Backend using goblin written in go and redis
-<command> | curl -F 'gob=<-' {{.Domain}}
-Or, to paste to a horde:
-<command> | curl -F 'gob=<-' {{.Domain}}/<horde>
-Going to gobin.io/h/<horde> will list everything that has been pasted to it
-{{end}}

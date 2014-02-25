@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	alphaReg = regexp.MustCompile("^[A-Za-z]+$")
+	alphaReg            = regexp.MustCompile("^[A-Za-z]+$")
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
 )
 
@@ -60,22 +60,22 @@ func ipAddrFromRemoteAddr(s string) string {
 }
 
 func getIpAddress(r *http.Request) string {
-        hdr := r.Header
-        hdrRealIp := hdr.Get("X-Real-Ip")
-        hdrForwardedFor := hdr.Get("X-Forwarded-For")
-        if hdrRealIp == "" && hdrForwardedFor == "" {
-                return ipAddrFromRemoteAddr(r.RemoteAddr)
-        }
-        //if hdrForwardedFor != "" {
-        //        // X-Forwarded-For is potentially a list of addresses separated with ","
-        //        parts := strings.Split(hdrForwardedFor, ",")
-        //        for i, p := range parts {
-        //                parts[i] = strings.TrimSpace(p)
-        //        }
-        //        // TODO: should return first non-local address
-        //        return parts[0]
-        //}
-        return net.ParseIP(hdrRealIp).String()
+	hdr := r.Header
+	hdrRealIp := hdr.Get("X-Real-Ip")
+	hdrForwardedFor := hdr.Get("X-Forwarded-For")
+	if hdrRealIp == "" && hdrForwardedFor == "" {
+		return ipAddrFromRemoteAddr(r.RemoteAddr)
+	}
+	//if hdrForwardedFor != "" {
+	//        // X-Forwarded-For is potentially a list of addresses separated with ","
+	//        parts := strings.Split(hdrForwardedFor, ",")
+	//        for i, p := range parts {
+	//                parts[i] = strings.TrimSpace(p)
+	//        }
+	//        // TODO: should return first non-local address
+	//        return parts[0]
+	//}
+	return net.ParseIP(hdrRealIp).String()
 }
 
 func getPageType(r *http.Request) string {
@@ -89,11 +89,13 @@ func getPageType(r *http.Request) string {
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
 	pageType := getPageType(r)
-	if err := templ.WriteHomePage(w, pageType); err != nil {
+	pageBytes, err := templ.GetHomePage(pageType)
+	if err != nil {
 		gslog.Debug("failed to write home with error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Write(pageBytes)
 }
 
 func GetGob(w http.ResponseWriter, r *http.Request) {
@@ -126,12 +128,13 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pageType := getPageType(r)
-	err = templ.WriteHordePage(w, pageType, hordeName, horde)
+	pageBytes, err := templ.GetHordePage(pageType, hordeName, horde)
 	if err != nil {
 		gslog.Debug("failed to get horde with error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Write(pageBytes)
 }
 
 func PostGob(w http.ResponseWriter, r *http.Request) {

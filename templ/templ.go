@@ -1,11 +1,12 @@
 package templ
 
 import (
+	"bytes"
+	"errors"
+	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	htmlTemplate "html/template"
 	textTemplate "text/template"
-	"net/http"
-	"errors"
 )
 
 type HordePage struct {
@@ -17,50 +18,57 @@ type HordePage struct {
 type HomePage struct {
 	Domain string
 	Title  string
-	Horde  storage.Horde
 }
 
 var (
 	htmlTemplates *htmlTemplate.Template
 	textTemplates *textTemplate.Template
-	domain    string
+	domain        string
 )
 
-func executeTemplate(w http.ResponseWriter, contentType string, templateName string, data interface{}) error {
+func executeTemplate(contentType string, templateName string, data interface{}) ([]byte, error) {
+	var err error
+	buf := &bytes.Buffer{}
 	switch contentType {
 	case "HTML":
-		return htmlTemplates.ExecuteTemplate(w, templateName, data)
+		gslog.Debug("executeTemplate with contentType 'HTML' and template name '%s'", templateName)
+		err = htmlTemplates.ExecuteTemplate(buf, templateName, data)
+		break
 	case "TEXT":
-		return textTemplates.ExecuteTemplate(w, templateName, data)
+		gslog.Debug("executeTemplate with contentType 'TEXT' and template name '%s'", templateName)
+		err = textTemplates.ExecuteTemplate(buf, templateName, data)
+		break
+	default:
+		err = errors.New("invalid content type")
 	}
-	return errors.New("invalid content type")
+	return buf.Bytes(), err
 }
 
-func unescaped (x string) interface{} {
+func unescaped(x string) interface{} {
 	return htmlTemplate.HTML(x)
 }
 
 func Initialize(htmlTemplatesPath string, textTemplatesPath string, confDomain string) error {
 	var err error
-	htmlTemplates = htmlTemplate.New("homePage")
-	htmlTemplates = htmlTemplates.Funcs(htmlTemplate.FuncMap{"unescaped": unescaped})
 	htmlTemplates, err = htmlTemplate.ParseFiles(htmlTemplatesPath)
 	if err != nil {
 		return err
 	}
 	textTemplates, err = textTemplate.ParseFiles(textTemplatesPath)
+	gslog.Debug("htmlTemplates: %+v", htmlTemplates)
+	gslog.Debug("textTemplates: %+v", textTemplates)
 	domain = confDomain
 	return err
 }
 
-func WriteHordePage(w http.ResponseWriter, contentType string, hordeName string, horde storage.Horde) error {
+func GetHordePage(contentType string, hordeName string, horde storage.Horde) ([]byte, error) {
 	p := &HordePage{Domain: domain, Title: "horde: " + hordeName, Horde: horde}
-	return executeTemplate(w, contentType, "hordePage", p)
+	return executeTemplate(contentType, "hordePage", p)
 }
 
-func WriteHomePage(w http.ResponseWriter, contentType string) error {
+func GetHomePage(contentType string) ([]byte, error) {
 	p := &HomePage{Domain: domain, Title: "gobin: a cli pastebin"}
-	return executeTemplate(w, contentType, "homePage", p)
+	return executeTemplate(contentType, "homePage", p)
 }
 
 func BuildURL(uid string) string {

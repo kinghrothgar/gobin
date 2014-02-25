@@ -1,9 +1,8 @@
-{{define "header"}}
-<!DOCTYPE html>
-<html>
+{{define "head"}}
 <head>
     <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
-    <title>{{.}}</title>
+    <link rel="stylesheet" href="/static/css/code-block.css">
+    <title>{{.Title}}</title>
 </head>
 {{end}}
 
@@ -19,25 +18,23 @@
 </body>
 {{end}}
 
-{{define "hordePage"}}
-{{template "header" .Title}}
-{{template "hordeBody" .}}
-{{end}}
-
 {{define "homeBody"}}
-<body> 
-<pre>
+<body>
+<span class="code-block">
 Welcome to GoBin, command line pastebin.
 Backend using goblin written in go and redis
-<command> | curl -F 'gob=<-' {{.Domain}}
+&lt;command&gt; | curl -F &#39;gob=&lt;-&#39; {{.Domain}}
 Or, to paste to a horde:
-<command> | curl -F 'gob=<-' {{.Domain}}/<horde>
-Going to gobin.io/h/<horde> will list everything that has been pasted to it
-</pre>
+&lt;command&gt; | curl -F &#39;gob=&lt;-&#39; {{.Domain}}/&lt;horde&gt;
+Going to gobin.io/h/&lt;horde&gt; will list everything that has been pasted to it
+</span>
 </body>
 {{end}}
 
-{{define "homePage"}}
-{{template "header" .Title}}
-{{template "homeBody" . | unescaped}}
+{{define "homePage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+{{template "homeBody" .}}
+</html>
 {{end}}
+

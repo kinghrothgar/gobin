@@ -11,19 +11,19 @@ import (
 
 // Variables for flags
 var (
-	ConfPath      string
-	HTMLTemplatesDir string
-	TextTemplatesDir string
-	StaticPath    string
-	LogLevel      string
-	LogFile       string
-	ShowVers      bool
-	ExeFolder     string
-	UIDLen        int
-	StoreType     string
-	Domain        string
-	Favicon       string
-	Port          string
+	ConfPath          string
+	HTMLTemplatesPath string
+	TextTemplatesPath string
+	StaticPath        string
+	LogLevel          string
+	LogFile           string
+	ShowVers          bool
+	ExeFolder         string
+	UIDLen            int
+	StoreType         string
+	Domain            string
+	Favicon           string
+	Port              string
 )
 
 func init() {
@@ -46,12 +46,12 @@ func Parse() error {
 		LogFile = filepath.Join(ExeFolder, "goblin.log")
 	}
 
-	if HTMLTemplatesDir == "" {
-		HTMLTemplatesDir = filepath.Join(ExeFolder, "templates/html")
+	if HTMLTemplatesPath == "" {
+		HTMLTemplatesPath = filepath.Join(ExeFolder, "templates/textTemplates.tmpl")
 	}
 
-	if TextTemplatesDir == "" {
-		TextTemplatesDir = filepath.Join(ExeFolder, "templates/text")
+	if TextTemplatesPath == "" {
+		TextTemplatesPath = filepath.Join(ExeFolder, "templates/htmlTemplates.tmpl")
 	}
 
 	if StaticPath == "" {
