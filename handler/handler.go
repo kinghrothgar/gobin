@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -91,6 +92,71 @@ func getPageType(r *http.Request) string {
 	return pageType
 }
 
+func getLanguage(r *http.Request) string {
+	params := r.URL.Query()
+	// Firgure out language parameter
+	lang := ""
+	for key, _ := range params {
+		// Skip the pat params that start with :
+		if key[0] == ':' {
+			continue
+		}
+		lang = strings.ToLower(key)
+	}
+	// Deal with aliases
+	switch lang {
+	case "markup":
+		break
+	case "css":
+	    break
+	case "css.selector":
+	    break
+	case "clike":
+	    break
+	case "javascript", "js":
+		lang = "javascript"
+	    break
+	case "java":
+	    break
+	case "php":
+	    break
+	case "coffeescript", "coffee":
+		lang = "coffeescript"
+	    break
+	case "scss":
+	    break
+	case "bash", "sh":
+		lang = "bash"
+	    break
+	case "c":
+	    break
+	case "cpp":
+	    break
+	case "python", "py":
+		lang = "python"
+	    break
+	case "sql":
+	    break
+	case "groovy", "gvy", "gy", "gsh":
+		lang = "groovy"
+	    break
+	case "http":
+	    break
+	case "ruby", "rb":
+		lang = "ruby"
+	    break
+	case "gherkin":
+	    break
+	case "csharp":
+	    break
+	case "go":
+	    break
+	default:
+		lang = ""
+	}
+	return lang
+}
+
 func GetRoot(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("GetRoot called")
 	params := r.URL.Query()
@@ -121,14 +187,7 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Firgure out language parameter
-	lang := ""
-	for key, _ := range params {
-		// Skip the pat params that start with :
-		if key[0] == ':' {
-			continue
-		}
-		lang = key
-	}
+	lang := getLanguage(r)
 
 	if lang == "" {
 		gslog.Debug("GetGob writing data")
