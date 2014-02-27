@@ -18,5 +18,5 @@ type UIDCreated struct {
 	Created string
 }
 
-// A slice of Pairs that implements sort.Interface to sort by Value.
+// A slice of Pairs (UID string and Created time string)
 type Horde []*UIDCreated

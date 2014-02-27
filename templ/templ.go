@@ -74,6 +74,9 @@ func GetHordePage(contentType string, hordeName string, horde storage.Horde) ([]
 
 func GetGobPage(language string, data []byte) ([]byte, error) {
 	p := &GobPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: string(data)}
+	if language == "markdown" {
+		return executeTemplate("HTML", "mdPage", p)
+	}
 	return executeTemplate("HTML", "gobPage", p)
 }
 

@@ -20,7 +20,7 @@ var (
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	//parse the multipart form in the request
-	err := r.ParseMultipartForm(11534336)
+	err := r.ParseMultipartForm(11534336) // 11 MB
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
@@ -32,26 +32,24 @@ func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	return []byte(str)
 }
 
-func validateUID(w http.ResponseWriter, uid string) error {
+func validateUID(uid string) error {
 	// This is so someone can't access a horde goblin
 	// by just puting the 'horde#uid' instead of 'horde/uid'
 	// and prevents a lookup if it's obviously crap
 	if len(uid) > conf.UIDLen || !alphaReg.MatchString(uid) {
-		err := errors.New("invalid uid")
-		gslog.Debug(err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
+		gslog.Debug("invalid uid")
+		return errors.New("invalid uid")
 	}
 	return nil
 }
 
-func validateHordeName(w http.ResponseWriter, hordeName string) {
+func validateHordeName(hordeName string) error {
 	// TODO: horde max length?
 	if len(hordeName) > 50 || !alphaReg.MatchString(hordeName) {
 		gslog.Debug("invalid horde name")
-		http.Error(w, "invalid horde name", http.StatusBadRequest)
+		return errors.New("invalid horde name")
 	}
-	return
+	return nil
 }
 
 // Request.RemoteAddress contains port, which we want to remove i.e.:
@@ -68,15 +66,15 @@ func getIpAddress(r *http.Request) string {
 	if hdrRealIp == "" && hdrForwardedFor == "" {
 		return ipAddrFromRemoteAddr(r.RemoteAddr)
 	}
-	//if hdrForwardedFor != "" {
-	//        // X-Forwarded-For is potentially a list of addresses separated with ","
-	//        parts := strings.Split(hdrForwardedFor, ",")
-	//        for i, p := range parts {
-	//                parts[i] = strings.TrimSpace(p)
-	//        }
-	//        // TODO: should return first non-local address
-	//        return parts[0]
-	//}
+	if hdrForwardedFor != "" {
+	        // X-Forwarded-For is potentially a list of addresses separated with ","
+	        parts := strings.Split(hdrForwardedFor, ",")
+	        for i, p := range parts {
+	                parts[i] = strings.TrimSpace(p)
+	        }
+	        // TODO: should return first non-local address
+	        return parts[0]
+	}
 	return net.ParseIP(hdrRealIp).String()
 }
 
@@ -84,12 +82,11 @@ func getPageType(r *http.Request) string {
 	userAgent := r.Header.Get("User-Agent")
 	params := r.URL.Query()
 	_, cli := params["cli"]
-	pageType := "HTML"
 	// If cli param present or Mozilla not found in the user agent, use plain text
 	if cli || !browserUserAgentReg.MatchString(userAgent) {
-		pageType = "TEXT"
+		return "TEXT"
 	}
-	return pageType
+	return "HTML"
 }
 
 func getLanguage(r *http.Request) string {
@@ -105,51 +102,41 @@ func getLanguage(r *http.Request) string {
 	}
 	// Deal with aliases
 	switch lang {
-	case "markup":
-		break
-	case "css":
-	    break
-	case "css.selector":
-	    break
-	case "clike":
-	    break
 	case "javascript", "js":
 		lang = "javascript"
-	    break
-	case "java":
-	    break
-	case "php":
 	    break
 	case "coffeescript", "coffee":
 		lang = "coffeescript"
 	    break
-	case "scss":
-	    break
 	case "bash", "sh":
 		lang = "bash"
-	    break
-	case "c":
-	    break
-	case "cpp":
 	    break
 	case "python", "py":
 		lang = "python"
 	    break
-	case "sql":
-	    break
 	case "groovy", "gvy", "gy", "gsh":
 		lang = "groovy"
-	    break
-	case "http":
 	    break
 	case "ruby", "rb":
 		lang = "ruby"
 	    break
-	case "gherkin":
-	    break
+	case "markdown", "md":
+		lang = "markdown"
+		break
+	case "c":
+	case "clike":
+	case "cpp":
 	case "csharp":
-	    break
+	case "css":
+	case "css.selector":
+	case "gherkin":
 	case "go":
+	case "http":
+	case "java":
+	case "markup":
+	case "php":
+	case "scss":
+	case "sql":
 	    break
 	default:
 		lang = ""
@@ -175,7 +162,7 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("GetGob called")
 	params := r.URL.Query()
 	uid := params.Get(":uid")
-	if err := validateUID(w, uid); err != nil {
+	if err := validateUID(uid); err != nil {
 		gslog.Debug(err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -195,6 +182,7 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	contentType := http.DetectContentType(data)
+	// If data is a valid content type for syntax highlighting
 	if textContentTypeReg.MatchString(contentType) {
 		data, err = templ.GetGobPage(lang, data)
 		if err != nil {
@@ -250,7 +238,11 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("PostHordeGob called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
-	validateHordeName(w, hordeName)
+	if err := validateHordeName(hordeName); err != nil {
+		gslog.Debug(err.Error())
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 	gobData := getGobData(w, r)
 	uid := store.GetNewUID()
 	ip := getIpAddress(r)

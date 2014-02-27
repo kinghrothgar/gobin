@@ -8,13 +8,10 @@
 
 {{define "hordeBody"}}
 <body>
-<h2>{{.Title}}</h2>
-<hr>
 <pre>
-{{$domain := .Domain}}{{with .Horde}}{{range .}}<a href="http://{{$domain}}/{{.UID}}">{{.UID}}</a>    {{.Created}}
+{{$domain := .Domain}}{{with .Horde}}{{range .}}<a href="http://{{$domain}}/{{.UID}}">http://{{$domain}}/{{.UID}}</a>    {{.Created}}
 {{end}}{{end}}
 </pre>
-<hr>
 </body>
 {{end}}
 
@@ -87,6 +84,24 @@ SEE ALSO
 <body>
     <pre class="line-numbers"><code class="language-{{.Language}}">{{.Data}}</code></pre>
     <script src="/static/js/prism.js"></script>
+</body>
+</html>
+{{end}}
+
+{{define "mdPage"}}<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <title>{{.Title}}</title>
+</head>
+<body>
+    <div id="mdText" class="hidden">{{.Data}}</div>
+    <div id="mdHTML"></div>
+    <script src="/static/js/markdown.js"></script>
+    <script>
+        var $ = function (id) { return document.getElementById(id); };
+        $("mdHTML").innerHTML = markdown.toHTML($("mdText").value);
+    </script>
 </body>
 </html>
 {{end}}
