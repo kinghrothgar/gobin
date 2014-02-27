@@ -95,12 +95,12 @@ SEE ALSO
     <title>{{.Title}}</title>
 </head>
 <body>
-    <div id="mdText" class="hidden">{{.Data}}</div>
+    <div id="mdText" style="display:none">{{.Data}}</div>
     <div id="mdHTML"></div>
     <script src="/static/js/markdown.js"></script>
     <script>
         var $ = function (id) { return document.getElementById(id); };
-        $("mdHTML").innerHTML = markdown.toHTML($("mdText").value);
+        $("mdHTML").innerHTML = markdown.toHTML($("mdText").innerHTML);
     </script>
 </body>
 </html>
