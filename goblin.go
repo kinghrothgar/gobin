@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"syscall"
 )
 
 // To be set at build
@@ -75,12 +76,19 @@ func main() {
 	go listenAndServer(":"+conf.Port, c)
 
 	// Set up listening for os signals
-	sigCh := make(chan os.Signal, 5)
+	shutdownCh := make(chan os.Signal, 5)
 	// TODO: What signals for Windows if any?
-	signal.Notify(sigCh, os.Interrupt, os.Kill)
+	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGKILL)
+	// Set up listening for os signals
+	reloadCh := make(chan os.Signal, 5)
+	signal.Notify(reloadCh, syscall.SIGUSR2)
 	for {
 		select {
-		case <-sigCh:
+		case <-reloadCh:
+			if err := templ.Reload(conf.HTMLTemplatesPath, conf.TextTemplatesPath, conf.Domain); err != nil {
+				gslog.Error("failed to reload with error: %s", err.Error())
+			}
+		case <-shutdownCh:
 			gslog.Info("Syscall recieved, shutting down...")
 			gslog.Flush()
 			os.Exit(0)

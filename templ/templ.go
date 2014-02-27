@@ -67,6 +67,24 @@ func Initialize(htmlTemplatesPath string, textTemplatesPath string, confDomain s
 	return err
 }
 
+func Reload(htmlTemplatesPath string, textTemplatesPath string, confDomain string) error {
+	if htmlTemplatesTemp, err := htmlTemplate.ParseFiles(htmlTemplatesPath); err != nil {
+		return err
+	} else {
+		htmlTemplates = htmlTemplatesTemp
+		gslog.Info("htmlTemplates reloaded")
+	}
+	if textTemplatesTemp, err := textTemplate.ParseFiles(textTemplatesPath); err != nil {
+		return err
+	} else {
+		textTemplates = textTemplatesTemp
+		gslog.Info("textTemplates reloaded")
+	}
+	domain = confDomain
+	return nil
+}
+
+
 func GetHordePage(contentType string, hordeName string, horde storage.Horde) ([]byte, error) {
 	p := &HordePage{Domain: domain, Title: "horde: " + hordeName, Horde: horde}
 	return executeTemplate(contentType, "hordePage", p)
