@@ -170,7 +170,7 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("GetGob called")
 	params := r.URL.Query()
 	uid := params.Get(":uid")
-	if validUID(uid) {
+	if !validUID(uid) {
 		returnHTTPError(w, "GetGob", uid + " not found", http.StatusNotFound)
 		return
 	}
@@ -210,7 +210,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("HANDLER: GetHorde called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
-	if validHordeName(hordeName) {
+	if !validHordeName(hordeName) {
 		returnHTTPError(w, "GetHorde", hordeName + " not found", http.StatusNotFound)
 		return
 	}
@@ -259,7 +259,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("PostHordeGob called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
-	if validHordeName(hordeName) {
+	if !validHordeName(hordeName) {
 		returnHTTPError(w, "PostHordeGob", hordeName + " not found", http.StatusNotFound)
 		return
 	}

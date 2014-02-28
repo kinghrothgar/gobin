@@ -26,6 +26,12 @@ type GobPage struct {
 	Data     string
 }
 
+type MDPage struct {
+	Title    string
+	Language string
+	Data     htmlTemplate.HTML
+}
+
 var (
 	htmlTemplates *htmlTemplate.Template
 	textTemplates *textTemplate.Template
@@ -70,7 +76,7 @@ func Reload(htmlTemplatesPath string, textTemplatesPath string, confDomain strin
 		return err
 	} else {
 		htmlTemplates = htmlTemplatesTemp
-		gslog.Info("htmlTemplates loaded")
+		gslog.Debug("htmlTemplates loaded")
 	}
 	if textTemplatesTemp, err := textTemplate.ParseFiles(textTemplatesPath); err != nil {
 		return err
@@ -88,10 +94,11 @@ func GetHordePage(contentType string, hordeName string, horde storage.Horde) ([]
 }
 
 func GetGobPage(language string, data []byte) ([]byte, error) {
-	p := &GobPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: string(data)}
 	if language == "markdown" {
+		p := &MDPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: htmlTemplate.HTML(string(data))}
 		return executeTemplate("HTML", "mdPage", p)
 	}
+	p := &GobPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: string(data)}
 	return executeTemplate("HTML", "gobPage", p)
 }
 
