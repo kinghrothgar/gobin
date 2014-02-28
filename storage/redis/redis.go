@@ -3,10 +3,17 @@ package redis
 import (
 	"bytes"
 	realgob "encoding/gob"
+	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/kinghrothgar/redis/pool"
 	"github.com/mediocregopher/radix/redis"
 	"time"
+)
+
+const (
+	MB   int = 1048576
+	DAY  int = 86400
+	YEAR     = 365 * DAY
 )
 
 type RedisStore struct {
@@ -31,6 +38,14 @@ func gobEncode(gob *storage.Gob) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
+func calculateTTL(gobBytes []byte) int {
+	sizeMB := len(gobBytes) / MB
+	if sizeMB < 1 {
+		return YEAR
+	}
+	return (-20*sizeMB + 207) * DAY
+}
+
 // gobDecode decodes a byte array into a storage gob
 func gobDecode(gobBytes []byte) (*storage.Gob, error) {
 	gob := &storage.Gob{}
@@ -43,6 +58,17 @@ func gobDecode(gobBytes []byte) (*storage.Gob, error) {
 // New returns a new RedisStore
 func New(confStr string) *RedisStore {
 	return &RedisStore{pool.New("tcp", confStr, 50)}
+}
+
+// setTTL sets the expire time for the uid based on the size
+// TODO: should I be passing the client in?
+func (redisStore *RedisStore) setTTL(client *pool.Client, uid string, gobBytes []byte) {
+	defer redisStore.Put(client)
+	ttl := calculateTTL(gobBytes)
+	reply := client.Cmd("EXPIRE", gobKey(uid), ttl)
+	if i, _ := reply.Int(); i == 0 {
+		gslog.Error("REDIS: could not set expire time for uid '%s' to %d seconds", uid, ttl)
+	}
 }
 
 func (redisStore *RedisStore) UIDExist(uid string) (bool, error) {
@@ -73,7 +99,7 @@ func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
 	if reply := client.Cmd("SET", gobKey(gob.UID), gobBytes); reply.Err != nil {
 		return reply.Err
 	}
-	redisStore.Put(client)
+	go redisStore.setTTL(client, gob.UID, gobBytes)
 	return nil
 }
 
@@ -86,15 +112,15 @@ func (redisStore *RedisStore) GetGob(uid string) (*storage.Gob, error) {
 	if reply.Err != nil {
 		return nil, reply.Err
 	}
-	redisStore.Put(client)
 	if reply.Type == redis.NilReply {
 		return nil, nil
 	}
-	b, err := reply.Bytes()
+	gobBytes, err := reply.Bytes()
 	if err != nil {
 		return nil, err
 	}
-	return gobDecode(b)
+	go redisStore.setTTL(client, uid, gobBytes)
+	return gobDecode(gobBytes)
 }
 
 func (redisStore *RedisStore) DelGob(uid string) error {
