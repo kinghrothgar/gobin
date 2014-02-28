@@ -5,6 +5,7 @@
 
 # Compiled program and configs
 goblin
+goblin.conf
 
 # Vim swap
 .*.sw[opn]
