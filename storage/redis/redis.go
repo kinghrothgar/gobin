@@ -57,7 +57,7 @@ func gobDecode(gobBytes []byte) (*storage.Gob, error) {
 
 // New returns a new RedisStore
 func New(confStr string) *RedisStore {
-	return &RedisStore{pool.New("tcp", confStr, 50)}
+	return &RedisStore{pool.New("tcp", confStr, 100)}
 }
 
 // setTTL sets the expire time for the uid based on the size
