@@ -23,6 +23,11 @@ deps:
     ref: byteslice-fix
     path: github.com/mediocregopher/radix
 
+  - loc: https://github.com/kinghrothgar/redis.git
+    type: git
+    ref: master
+    path: github.com/kinghrothgar/redis
+
   - loc: https://github.com/mediocregopher/flagconfig.git
     type: git
     ref: master

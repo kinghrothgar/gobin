@@ -4,8 +4,8 @@ import (
 	"bytes"
 	realgob "encoding/gob"
 	"github.com/kinghrothgar/goblin/storage"
+	"github.com/kinghrothgar/redis/pool"
 	"github.com/mediocregopher/radix/redis"
-	"github.com/kinghrothgar/goblin/storage/redis/pool"
 	"time"
 )
 
@@ -44,7 +44,6 @@ func gobDecode(gobBytes []byte) (*storage.Gob, error) {
 func New(confStr string) *RedisStore {
 	return &RedisStore{pool.New("tcp", confStr, 50)}
 }
-
 
 func (redisStore *RedisStore) UIDExist(uid string) (bool, error) {
 	client, err := redisStore.Get()
