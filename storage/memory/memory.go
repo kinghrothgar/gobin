@@ -104,3 +104,11 @@ func (memoryStore *MemoryStore) Initialize(confStr string) error {
 	memoryStore.uidToHorde = UIDToHorde{}
 	return nil
 }
+
+func (memoryStore *MemoryStore) Configure(confStr string) {
+	return 
+}
+
+func New(confStr string) *MemoryStore {
+	return new(MemoryStore)
+}

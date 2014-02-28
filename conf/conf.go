@@ -2,75 +2,71 @@ package conf
 
 import (
 	"bitbucket.org/kardianos/osext"
-	"flag"
 	//"github.com/grooveshark/golib/gslog"
-	"errors"
+	"github.com/mediocregopher/flagconfig"
 	"path/filepath"
-	"strings"
+	"sync"
 )
 
 // Variables for flags
 var (
-	ConfPath          string
-	HTMLTemplatesPath string
-	TextTemplatesPath string
-	StaticPath        string
-	LogLevel          string
-	LogFile           string
-	ShowVers          bool
-	ExeFolder         string
-	UIDLen            int
-	StoreType         string
-	Domain            string
-	Favicon           string
-	Port              string
+	fc     *flagconfig.FlagConfig
+	fcLock = sync.RWMutex{}
 )
 
-func init() {
-	// Find location of binary
-	ExeFolder, _ = osext.ExecutableFolder()
-	flag.StringVar(&ConfPath, "config", filepath.Join(ExeFolder, "goblin.yaml"), "path to general config file")
-	flag.StringVar(&LogLevel, "loglevel", "", "level logging (DEBUG, INFO, WARN, ERROR, FATAL)")
-	flag.StringVar(&LogFile, "logfile", "", "path to log file")
-	flag.BoolVar(&ShowVers, "V", false, "show version/build information")
-	flag.Parse()
-	LogLevel = strings.ToUpper(LogLevel)
-}
-
 func Parse() error {
-	if LogLevel == "" {
-		LogLevel = "DEBUG"
-	}
+	exeFolder, _ := osext.ExecutableFolder()
 
-	if LogFile == "" {
-		LogFile = filepath.Join(ExeFolder, "goblin.log")
-	}
+	f := flagconfig.New("goblin")
+	f.StrParam("loglevel", "logging level (DEBUG, INFO, WARN, ERROR, FATAL)", "DEBUG")
+	f.StrParam("logfile", "path to log file", "")
+	f.StrParam("htmltemplates", "path to html templates file", filepath.Join(exeFolder, "templates/htmlTemplates.tmpl"))
+	f.StrParam("texttemplates", "path to text templates file", filepath.Join(exeFolder, "templates/textTemplates.tmpl"))
+	f.StrParam("staticpath", "path to static files folder", filepath.Join(exeFolder, "static"))
+	f.IntParam("uidlength", "length of gob uid string", 4)
+	f.RequiredStrParam("storetype", "the data store to use")
+	f.RequiredStrParam("storeconf", "a string of the form 'IP:PORT' to configure the data store")
+	f.RequiredStrParam("domain", "the domain to use to for links")
+	f.RequiredStrParam("listen", "a string of the form 'IP:PORT' which program will listen on")
+	f.FlagParam("V", "show version/build information", false)
 
-	if HTMLTemplatesPath == "" {
-		HTMLTemplatesPath = filepath.Join(ExeFolder, "templates/htmlTemplates.tmpl")
+	if err := f.Parse(); err != nil {
+		return err
 	}
-
-	if TextTemplatesPath == "" {
-		TextTemplatesPath = filepath.Join(ExeFolder, "templates/textTemplates.tmpl")
-	}
-
-	if StaticPath == "" {
-		StaticPath = filepath.Join(ExeFolder, "static")
-	}
-
-	UIDLen = 4
-	StoreType = "REDIS"
-	Domain = "gobin.io"
-	Port = "6667"
+	fcLock.Lock()
+	defer fcLock.Unlock()
+	fc = f
+	//UIDLen = 4
+	//StoreType = "REDIS"
+	//Domain = "gobin.io"
+	//Port = "6667"
 	return nil
 }
 
-func Validate() error {
-	switch LogLevel {
-	case "", "DEBUG", "INFO", "WARN", "ERROR", "FATAL":
-		break
-	default:
-		return errors.New("Invalid loglevel flag argument")
-	}
-	return nil
+func GetStr(k string) string {
+	fcLock.RLock()
+	defer fcLock.RUnlock()
+	return fc.GetStr(k)
 }
+
+func GetStrs(k string) []string {
+	fcLock.RLock()
+	defer fcLock.RUnlock()
+	return fc.GetStrs(k)
+}
+
+func GetInt(k string) int {
+	fcLock.RLock()
+	defer fcLock.RUnlock()
+	return fc.GetInt(k)
+}
+
+//func Validate() error {
+//	switch LogLevel {
+//	case "", "DEBUG", "INFO", "WARN", "ERROR", "FATAL":
+//		break
+//	default:
+//		return errors.New("Invalid loglevel flag argument")
+//	}
+//	return nil
+//}

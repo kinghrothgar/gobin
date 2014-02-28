@@ -37,11 +37,9 @@ func executeTemplate(contentType string, templateName string, data interface{}) 
 	buf := &bytes.Buffer{}
 	switch contentType {
 	case "HTML":
-		gslog.Debug("executeTemplate with contentType 'HTML' and template name '%s'", templateName)
 		err = htmlTemplates.ExecuteTemplate(buf, templateName, data)
 		break
 	case "TEXT":
-		gslog.Debug("executeTemplate with contentType 'TEXT' and template name '%s'", templateName)
 		err = textTemplates.ExecuteTemplate(buf, templateName, data)
 		break
 	default:
@@ -61,8 +59,8 @@ func Initialize(htmlTemplatesPath string, textTemplatesPath string, confDomain s
 		return err
 	}
 	textTemplates, err = textTemplate.ParseFiles(textTemplatesPath)
-	gslog.Debug("htmlTemplates: %+v", htmlTemplates)
-	gslog.Debug("textTemplates: %+v", textTemplates)
+	gslog.Debug("TEMPL: loaded htmlTemplates from %s", htmlTemplatesPath)
+	gslog.Debug("TEMPL: loaded textTemplates from %s", textTemplatesPath)
 	domain = confDomain
 	return err
 }
@@ -72,18 +70,17 @@ func Reload(htmlTemplatesPath string, textTemplatesPath string, confDomain strin
 		return err
 	} else {
 		htmlTemplates = htmlTemplatesTemp
-		gslog.Info("htmlTemplates reloaded")
+		gslog.Info("htmlTemplates loaded")
 	}
 	if textTemplatesTemp, err := textTemplate.ParseFiles(textTemplatesPath); err != nil {
 		return err
 	} else {
 		textTemplates = textTemplatesTemp
-		gslog.Info("textTemplates reloaded")
+		gslog.Info("textTemplates loaded")
 	}
 	domain = confDomain
 	return nil
 }
-
 
 func GetHordePage(contentType string, hordeName string, horde storage.Horde) ([]byte, error) {
 	p := &HordePage{Domain: domain, Title: "horde: " + hordeName, Horde: horde}

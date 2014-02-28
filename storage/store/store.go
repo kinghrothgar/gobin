@@ -3,7 +3,6 @@ package store
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/kinghrothgar/goblin/storage/memory"
 	"github.com/kinghrothgar/goblin/storage/redis"
@@ -23,7 +22,7 @@ type DataStore interface {
 	GetHorde(string) (storage.Horde, error)
 	AddUIDHorde(string, string) error
 	DelUIDHorde(string, string) error
-	Initialize(string) error
+	Configure(string)
 }
 
 type FileStore interface {
@@ -44,8 +43,8 @@ var (
 
 func GetGob(uid string) ([]byte, string, error) {
 	gob, err := dataStore.GetGob(uid)
-	if err != nil {
-		return nil, "", err
+	if err != nil || gob == nil {
+		return []byte{}, "", err
 	}
 	return gob.Data, gob.Type, err
 }
@@ -81,13 +80,18 @@ func Initialize(storeType string, confStr string, uidLength int) error {
 	uidLen = uidLength
 	switch strings.ToUpper(storeType) {
 	case "MEMORY":
-		dataStore = new(memory.MemoryStore)
+		dataStore = memory.New(confStr)
+		return nil
 	case "REDIS":
-		dataStore = new(redis.RedisStore)
+		dataStore = redis.New(confStr)
+		return nil
 	default:
-		return errors.New("invalid store type")
 	}
-	return dataStore.Initialize(confStr)
+	return errors.New("invalid store type")
+}
+
+func Configure(confStr string, uidLength int) {
+	dataStore.Configure(confStr)
 }
 
 func GetNewUID() string {
@@ -97,9 +101,7 @@ func GetNewUID() string {
 		bytes[i] = ALPHA[b%byte(len(ALPHA))]
 	}
 	uid := string(bytes)
-	gslog.Debug("checking if " + uid + " exists")
 	if exist, _ := dataStore.UIDExist(uid); exist {
-		gslog.Debug(uid + " exists")
 		return GetNewUID()
 	}
 	return uid

@@ -3,15 +3,14 @@ package redis
 import (
 	"bytes"
 	realgob "encoding/gob"
-	"errors"
-	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/mediocregopher/radix/redis"
+	"github.com/kinghrothgar/goblin/storage/redis/pool"
 	"time"
 )
 
 type RedisStore struct {
-	Client *redis.Client
+	*pool.Pool
 }
 
 // gobKey forms the redis key from the uid
@@ -41,13 +40,22 @@ func gobDecode(gobBytes []byte) (*storage.Gob, error) {
 	return gob, err
 }
 
+// New returns a new RedisStore
+func New(confStr string) *RedisStore {
+	return &RedisStore{pool.New("tcp", confStr, 50)}
+}
+
+
 func (redisStore *RedisStore) UIDExist(uid string) (bool, error) {
-	gslog.Debug("making redis get call")
-	reply := redisStore.Client.Cmd("GET", gobKey(uid))
-	gslog.Debug("made redis get call")
+	client, err := redisStore.Get()
+	if err != nil {
+		return false, err
+	}
+	reply := client.Cmd("GET", gobKey(uid))
 	if reply.Err != nil {
 		return false, reply.Err
 	}
+	redisStore.Put(client)
 	if reply.Type == redis.NilReply {
 		return false, nil
 	}
@@ -59,17 +67,29 @@ func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
 	if err != nil {
 		return err
 	}
-	reply := redisStore.Client.Cmd("SET", gobKey(gob.UID), gobBytes)
-	return reply.Err
+	client, err := redisStore.Get()
+	if err != nil {
+		return err
+	}
+	if reply := client.Cmd("SET", gobKey(gob.UID), gobBytes); reply.Err != nil {
+		return reply.Err
+	}
+	redisStore.Put(client)
+	return nil
 }
 
 func (redisStore *RedisStore) GetGob(uid string) (*storage.Gob, error) {
-	reply := redisStore.Client.Cmd("GET", gobKey(uid))
+	client, err := redisStore.Get()
+	if err != nil {
+		return nil, err
+	}
+	reply := client.Cmd("GET", gobKey(uid))
 	if reply.Err != nil {
 		return nil, reply.Err
 	}
+	redisStore.Put(client)
 	if reply.Type == redis.NilReply {
-		return nil, errors.New("uid does not exist")
+		return nil, nil
 	}
 	b, err := reply.Bytes()
 	if err != nil {
@@ -84,10 +104,15 @@ func (redisStore *RedisStore) DelGob(uid string) error {
 }
 
 func (redisStore *RedisStore) GetHorde(hordeName string) (storage.Horde, error) {
-	reply := redisStore.Client.Cmd("ZRANGE", "horde:"+hordeName, 0, -1)
+	client, err := redisStore.Get()
+	if err != nil {
+		return nil, err
+	}
+	reply := client.Cmd("ZRANGE", "horde:"+hordeName, 0, -1)
 	if reply.Err != nil {
 		return nil, reply.Err
 	}
+	redisStore.Put(client)
 	h, err := reply.ListBytes()
 	if err != nil {
 		return nil, err
@@ -113,12 +138,18 @@ func (redisStore *RedisStore) AddUIDHorde(hordeName string, uid string) error {
 	if err := gobEnc.Encode(uidCreated); err != nil {
 		return err
 	}
-	reply := redisStore.Client.Cmd("ZADD", hordeKey(hordeName), now.UnixNano(), buf.Bytes())
-	if reply.Err != nil {
+	client, err := redisStore.Get()
+	if err != nil {
+		return err
+	}
+	if reply := client.Cmd("ZADD", hordeKey(hordeName), now.UnixNano(), buf.Bytes()); reply.Err != nil {
 		return reply.Err
 	}
-	reply = redisStore.Client.Cmd("SET", "uid.to.horde:"+uid, hordeName)
-	return reply.Err
+	if reply := client.Cmd("SET", "uid.to.horde:"+uid, hordeName); reply.Err != nil {
+		return reply.Err
+	}
+	redisStore.Put(client)
+	return nil
 }
 
 func (redisStore *RedisStore) DelUIDHorde(hordeName string, uid string) error {
@@ -135,8 +166,6 @@ func (redisStore *RedisStore) DelUIDHorde(hordeName string, uid string) error {
 	return nil
 }
 
-func (redisStore *RedisStore) Initialize(confStr string) error {
-	var err error
-	redisStore.Client, err = redis.Dial("tcp", "127.0.0.1:6666")
-	return err
+func (redisStore *RedisStore) Configure(confStr string) {
+	redisStore.SetConnection("tcp", confStr)
 }

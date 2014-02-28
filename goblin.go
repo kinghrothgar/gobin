@@ -30,23 +30,29 @@ func listenAndServer(addr string, c chan error) {
 }
 
 func main() {
-	if conf.ShowVers {
-		println("Commit: " + buildCommit)
-		println("Date:   " + buildDate)
-		os.Exit(0)
-	}
+	//if conf.ShowVers {
+	//	println("Commit: " + buildCommit)
+	//	println("Date:   " + buildDate)
+	//	os.Exit(0)
+	//}
 
 	gslog.Info("Goblin started [build commit: %s, build date: %s]", buildCommit, buildDate)
 
-	conf.Parse()
-	gslog.SetMinimumLevel(conf.LogLevel)
-	//gslog.SetLogFile(conf.LogFile)
-
-	if err := store.Initialize(conf.StoreType, "", conf.UIDLen); err != nil {
-		gslog.Fatal("failed to initialize storage with error: %s", err.Error())
+	if err := conf.Parse(); err != nil {
+		gslog.Fatal("MAIN: failed to parse conf with error: %s", err.Error())
 	}
-	if err := templ.Initialize(conf.HTMLTemplatesPath, conf.TextTemplatesPath, conf.Domain); err != nil {
-		gslog.Fatal("failed to initialize templates with error: %s", err.Error())
+
+	gslog.SetMinimumLevel(conf.GetStr("loglevel"))
+	if logFile := conf.GetStr("logfile"); logFile != "" {
+		gslog.SetLogFile(logFile)
+	}
+
+	handler.Initialize(conf.GetInt("uidlength"))
+	if err := store.Initialize(conf.GetStr("storetype"), conf.GetStr("storeconf"), conf.GetInt("uidlength")); err != nil {
+		gslog.Fatal("MAIN: failed to initialize storage with error: %s", err.Error())
+	}
+	if err := templ.Initialize(conf.GetStr("htmltemplates"), conf.GetStr("texttemplates"), conf.GetStr("domain")); err != nil {
+		gslog.Fatal("MAIN: failed to initialize templates with error: %s", err.Error())
 	}
 
 	// Setup route handlers
@@ -64,16 +70,18 @@ func main() {
 	http.Handle("/", mux)
 
 	// Mandatory root-based resources
-	serveSingle("/sitemap.xml", filepath.Join(conf.StaticPath, "sitemap.xml"))
-	serveSingle("/favicon.ico", filepath.Join(conf.StaticPath, "favicon.ico"))
-	serveSingle("/robots.txt", filepath.Join(conf.StaticPath, "robots.txt"))
+	staticPath := conf.GetStr("staticpath")
+	serveSingle("/sitemap.xml", filepath.Join(staticPath, "sitemap.xml"))
+	serveSingle("/favicon.ico", filepath.Join(staticPath, "favicon.ico"))
+	serveSingle("/robots.txt", filepath.Join(staticPath, "robots.txt"))
 
 	// Normal static resources
-	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir(conf.StaticPath))))
+	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir(staticPath))))
 
-	gslog.Info("Listening on " + conf.Port + " ...")
+	listenOn := conf.GetStr("listen")
+	gslog.Info("MAIN: Listening on %s...", listenOn)
 	c := make(chan error)
-	go listenAndServer(":"+conf.Port, c)
+	go listenAndServer(listenOn, c)
 
 	// Set up listening for os signals
 	shutdownCh := make(chan os.Signal, 5)
@@ -85,16 +93,29 @@ func main() {
 	for {
 		select {
 		case <-reloadCh:
-			if err := templ.Reload(conf.HTMLTemplatesPath, conf.TextTemplatesPath, conf.Domain); err != nil {
-				gslog.Error("failed to reload with error: %s", err.Error())
+			gslog.Info("MAIN: reloading")
+			if err := conf.Parse(); err != nil {
+				gslog.Error("MAIN: failed to parse conf with error: %s", err.Error())
+				break
+			}
+
+			gslog.SetMinimumLevel(conf.GetStr("loglevel"))
+			if logFile := conf.GetStr("logfile"); logFile != "" {
+				gslog.SetLogFile(logFile)
+			}
+
+			handler.Initialize(conf.GetInt("uidlength"))
+			store.Configure(conf.GetStr("storeconf"), conf.GetInt("uidlength"))
+			if err := templ.Reload(conf.GetStr("htmltemplates"), conf.GetStr("texttemplates"), conf.GetStr("domain")); err != nil {
+				gslog.Error("MAIN: failed to reload templates with error: %s", err.Error())
 			}
 		case <-shutdownCh:
-			gslog.Info("Syscall recieved, shutting down...")
+			gslog.Info("MAIN: Syscall recieved, shutting down...")
 			gslog.Flush()
 			os.Exit(0)
 		case err := <-c:
-			gslog.Error("ListenAndServe: %s", err)
-			gslog.Fatal("Failed to start server, exiting...")
+			gslog.Error("MAIN: ListenAndServe: %s", err)
+			gslog.Fatal("MAIN: Failed to start server, exiting...")
 		}
 	}
 }

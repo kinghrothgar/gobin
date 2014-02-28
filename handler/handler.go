@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"errors"
 	"github.com/grooveshark/golib/gslog"
-	"github.com/kinghrothgar/goblin/conf"
 	"github.com/kinghrothgar/goblin/storage/store"
 	"github.com/kinghrothgar/goblin/templ"
 	"net"
@@ -16,6 +14,7 @@ var (
 	alphaReg            = regexp.MustCompile("^[A-Za-z]+$")
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
 	textContentTypeReg  = regexp.MustCompile("^text/")
+	uidLen int
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
@@ -32,24 +31,22 @@ func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	return []byte(str)
 }
 
-func validateUID(uid string) error {
+func validUID(uid string) bool {
 	// This is so someone can't access a horde goblin
 	// by just puting the 'horde#uid' instead of 'horde/uid'
 	// and prevents a lookup if it's obviously crap
-	if len(uid) > conf.UIDLen || !alphaReg.MatchString(uid) {
-		gslog.Debug("invalid uid")
-		return errors.New("invalid uid")
+	if len(uid) > uidLen || !alphaReg.MatchString(uid) {
+		return false
 	}
-	return nil
+	return true
 }
 
-func validateHordeName(hordeName string) error {
+func validHordeName(hordeName string) bool {
 	// TODO: horde max length?
 	if len(hordeName) > 50 || !alphaReg.MatchString(hordeName) {
-		gslog.Debug("invalid horde name")
-		return errors.New("invalid horde name")
+		return false
 	}
-	return nil
+	return true
 }
 
 // Request.RemoteAddress contains port, which we want to remove i.e.:
@@ -57,6 +54,11 @@ func validateHordeName(hordeName string) error {
 func ipAddrFromRemoteAddr(s string) string {
 	host, _, _ := net.SplitHostPort(s)
 	return net.ParseIP(host).String()
+}
+
+func returnHTTPError(w http.ResponseWriter, funcName string, errMessage string, status int) {
+	gslog.Debug("HANDLER: %s returned error to user: %s", funcName, errMessage)
+	http.Error(w, errMessage, http.StatusInternalServerError)
 }
 
 func getIpAddress(r *http.Request) string {
@@ -67,13 +69,13 @@ func getIpAddress(r *http.Request) string {
 		return ipAddrFromRemoteAddr(r.RemoteAddr)
 	}
 	if hdrForwardedFor != "" {
-	        // X-Forwarded-For is potentially a list of addresses separated with ","
-	        parts := strings.Split(hdrForwardedFor, ",")
-	        for i, p := range parts {
-	                parts[i] = strings.TrimSpace(p)
-	        }
-	        // TODO: should return first non-local address
-	        return parts[0]
+		// X-Forwarded-For is potentially a list of addresses separated with ","
+		parts := strings.Split(hdrForwardedFor, ",")
+		for i, p := range parts {
+		        parts[i] = strings.TrimSpace(p)
+		}
+		// TODO: should return first non-local address
+		return parts[0]
 	}
 	return net.ParseIP(hdrRealIp).String()
 }
@@ -144,6 +146,12 @@ func getLanguage(r *http.Request) string {
 	return lang
 }
 
+// Must be called before any other functions are called
+// TODO: should I just called it SetUIDLen ?
+func Initialize(uidLength int) {
+	uidLen = uidLength
+}
+
 func GetRoot(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("GetRoot called")
 	params := r.URL.Query()
@@ -151,8 +159,8 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 	pageType := getPageType(r)
 	pageBytes, err := templ.GetHomePage(pageType)
 	if err != nil {
-		gslog.Debug("failed to write home with error: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		gslog.Error("HANDLER: failed to get home with error: %s", err.Error())
+		returnHTTPError(w, "GetRoot", "failed to get home", http.StatusInternalServerError)
 		return
 	}
 	w.Write(pageBytes)
@@ -162,22 +170,25 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("GetGob called")
 	params := r.URL.Query()
 	uid := params.Get(":uid")
-	if err := validateUID(uid); err != nil {
-		gslog.Debug(err.Error())
-		http.Error(w, err.Error(), http.StatusNotFound)
+	if validUID(uid) {
+		returnHTTPError(w, "GetGob", uid + " not found", http.StatusNotFound)
 		return
 	}
 	data, _, err := store.GetGob(uid)
 	if err != nil {
-		gslog.Debug("failed to get gob with error: " + err.Error())
-		http.Error(w, err.Error(), http.StatusNotFound)
+		gslog.Error("HANDLER: failed to get gob with error: " + err.Error())
+		returnHTTPError(w, "GetGob", "failed to get gob", http.StatusInternalServerError)
+		return
+	}
+	if len(data) == 0 {
+		returnHTTPError(w, "GetGob", uid + " not found", http.StatusNotFound)
 		return
 	}
 	// Firgure out language parameter
 	lang := getLanguage(r)
 
 	if lang == "" {
-		gslog.Debug("GetGob writing data")
+		gslog.Debug("HANDLER: GetGob writing data")
 		w.Write(data)
 		return
 	}
@@ -186,8 +197,8 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 	if textContentTypeReg.MatchString(contentType) {
 		data, err = templ.GetGobPage(lang, data)
 		if err != nil {
-			gslog.Debug("failed to get gob page with error: %s", err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			gslog.Error("HANDLER: failed to get gob page with error: %s", err.Error())
+			returnHTTPError(w, "GetGob", "failed to get gob", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -196,37 +207,47 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetHorde(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("GetHorde called")
+	gslog.Debug("HANDLER: GetHorde called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
+	if validHordeName(hordeName) {
+		returnHTTPError(w, "GetHorde", hordeName + " not found", http.StatusNotFound)
+		return
+	}
 	horde, err := store.GetHorde(hordeName)
 	if err != nil {
-		gslog.Debug("failed to get horde with error: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		gslog.Error("HANDLER: failed to get horde with error: %s", err.Error())
+		returnHTTPError(w, "GetHorde", "failed to get horde", http.StatusInternalServerError)
+		return
+	}
+	if len(horde) == 0 {
+		returnHTTPError(w, "GetHorde", hordeName + " not found", http.StatusNotFound)
 		return
 	}
 	pageType := getPageType(r)
 	pageBytes, err := templ.GetHordePage(pageType, hordeName, horde)
 	if err != nil {
-		gslog.Debug("failed to get horde with error: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		gslog.Debug("HANDLER: failed to get horde with error: %s", err.Error())
+		returnHTTPError(w, "GetHorde", "failed to get horde", http.StatusInternalServerError)
 		return
 	}
 	w.Write(pageBytes)
 }
 
 func PostGob(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("PostGob called")
-	gslog.Debug("Request has header: %+v", r.Header)
-	gslog.Debug("Request has host: %s", r.Host)
-	gslog.Debug("Request has requestURI: %s", r.RequestURI)
+	gslog.Debug("HANDLER: PostGob called with header: %+v, host: %s, requestURI: %s", r.Header, r.Host, r.RequestURI)
 	gobData := getGobData(w, r)
+	if len(gobData) == 0 {
+		returnHTTPError(w, "PostGob", "gob empty", http.StatusBadRequest)
+		return
+	}
+
 	uid := store.GetNewUID()
 	ip := getIpAddress(r)
-	gslog.Debug("uid: %s, ip: %s", uid, ip)
+	gslog.Debug("HANDLER: uid: %s, ip: %s", uid, ip)
 	if err := store.PutGob(uid, gobData, ip); err != nil {
-		gslog.Debug("put gob failed with error: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		gslog.Error("HANDLER: put gob failed with error: %s", err.Error())
+		returnHTTPError(w, "PostGob", "failed to save gob", http.StatusInternalServerError)
 		return
 	}
 
@@ -238,18 +259,21 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("PostHordeGob called")
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
-	if err := validateHordeName(hordeName); err != nil {
-		gslog.Debug(err.Error())
-		http.Error(w, err.Error(), http.StatusNotFound)
+	if validHordeName(hordeName) {
+		returnHTTPError(w, "PostHordeGob", hordeName + " not found", http.StatusNotFound)
 		return
 	}
 	gobData := getGobData(w, r)
+	if len(gobData) == 0 {
+		returnHTTPError(w, "PostHordeGob", "gob empty", http.StatusBadRequest)
+		return
+	}
 	uid := store.GetNewUID()
 	ip := getIpAddress(r)
 	gslog.Debug("uid: %s, ip: %s", uid, ip)
 	if err := store.PutHordeGob(uid, hordeName, gobData, ip); err != nil {
-		gslog.Debug("put horde gob failed with error: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		gslog.Error("HANDLER: put horde gob failed with error: %s", err.Error())
+		returnHTTPError(w, "PostHordeGob", "failed to save gob", http.StatusInternalServerError)
 	}
 
 	url := templ.BuildURL(uid)
@@ -258,8 +282,4 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 
 func DelGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("DelGob called")
-}
-
-func DelHordeGob(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("DelHordeGob called")
 }
