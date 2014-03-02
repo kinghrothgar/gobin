@@ -14,7 +14,7 @@ var (
 	alphaReg            = regexp.MustCompile("^[A-Za-z]+$")
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
 	textContentTypeReg  = regexp.MustCompile("^text/")
-	uidLen int
+	uidLen              int
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
@@ -72,7 +72,7 @@ func getIpAddress(r *http.Request) string {
 		// X-Forwarded-For is potentially a list of addresses separated with ","
 		parts := strings.Split(hdrForwardedFor, ",")
 		for i, p := range parts {
-		        parts[i] = strings.TrimSpace(p)
+			parts[i] = strings.TrimSpace(p)
 		}
 		// TODO: should return first non-local address
 		return parts[0]
@@ -106,22 +106,22 @@ func getLanguage(r *http.Request) string {
 	switch lang {
 	case "javascript", "js":
 		lang = "javascript"
-	    break
+		break
 	case "coffeescript", "coffee":
 		lang = "coffeescript"
-	    break
+		break
 	case "bash", "sh":
 		lang = "bash"
-	    break
+		break
 	case "python", "py":
 		lang = "python"
-	    break
+		break
 	case "groovy", "gvy", "gy", "gsh":
 		lang = "groovy"
-	    break
+		break
 	case "ruby", "rb":
 		lang = "ruby"
-	    break
+		break
 	case "markdown", "md":
 		lang = "markdown"
 		break
@@ -139,7 +139,7 @@ func getLanguage(r *http.Request) string {
 	case "php":
 	case "scss":
 	case "sql":
-	    break
+		break
 	default:
 		lang = ""
 	}
@@ -153,7 +153,7 @@ func Initialize(uidLength int) {
 }
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("GetRoot called")
+	gslog.Debug("HANDLER: GetRoot called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	params := r.URL.Query()
 	gslog.Debug("query params: %+v", params)
 	pageType := getPageType(r)
@@ -167,11 +167,11 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetGob(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("GetGob called")
+	gslog.Debug("HANDLER: GetGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	params := r.URL.Query()
 	uid := params.Get(":uid")
 	if !validUID(uid) {
-		returnHTTPError(w, "GetGob", uid + " not found", http.StatusNotFound)
+		returnHTTPError(w, "GetGob", uid+" not found", http.StatusNotFound)
 		return
 	}
 	data, _, err := store.GetGob(uid)
@@ -181,7 +181,7 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(data) == 0 {
-		returnHTTPError(w, "GetGob", uid + " not found", http.StatusNotFound)
+		returnHTTPError(w, "GetGob", uid+" not found", http.StatusNotFound)
 		return
 	}
 	// Firgure out language parameter
@@ -207,11 +207,11 @@ func GetGob(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetHorde(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("HANDLER: GetHorde called")
+	gslog.Debug("HANDLER: GetHorde called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
 	if !validHordeName(hordeName) {
-		returnHTTPError(w, "GetHorde", hordeName + " not found", http.StatusNotFound)
+		returnHTTPError(w, "GetHorde", hordeName+" not found", http.StatusNotFound)
 		return
 	}
 	horde, err := store.GetHorde(hordeName)
@@ -221,7 +221,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(horde) == 0 {
-		returnHTTPError(w, "GetHorde", hordeName + " not found", http.StatusNotFound)
+		returnHTTPError(w, "GetHorde", hordeName+" not found", http.StatusNotFound)
 		return
 	}
 	pageType := getPageType(r)
@@ -235,7 +235,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostGob(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("HANDLER: PostGob called with header: %+v, host: %s, requestURI: %s", r.Header, r.Host, r.RequestURI)
+	gslog.Debug("HANDLER: PostGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	gobData := getGobData(w, r)
 	if len(gobData) == 0 {
 		returnHTTPError(w, "PostGob", "gob empty", http.StatusBadRequest)
@@ -256,11 +256,11 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostHordeGob(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("PostHordeGob called")
+	gslog.Debug("HANDLER: PostHordeGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
 	if !validHordeName(hordeName) {
-		returnHTTPError(w, "PostHordeGob", hordeName + " not found", http.StatusNotFound)
+		returnHTTPError(w, "PostHordeGob", hordeName+" not found", http.StatusNotFound)
 		return
 	}
 	gobData := getGobData(w, r)
@@ -281,5 +281,5 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 }
 
 func DelGob(w http.ResponseWriter, r *http.Request) {
-	gslog.Debug("DelGob called")
+	gslog.Debug("HANDLER: DelGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 }
