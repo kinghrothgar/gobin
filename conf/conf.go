@@ -24,6 +24,7 @@ func Parse() error {
 	f.StrParam("texttemplates", "path to text templates file", filepath.Join(exeFolder, "templates/textTemplates.tmpl"))
 	f.StrParam("staticpath", "path to static files folder", filepath.Join(exeFolder, "static"))
 	f.IntParam("uidlength", "length of gob uid string", 4)
+	f.IntParam("deluidlength", "length of the delete uid string", 15)
 	f.RequiredStrParam("storetype", "the data store to use")
 	f.RequiredStrParam("storeconf", "a string of the form 'IP:PORT' to configure the data store")
 	f.RequiredStrParam("domain", "the domain to use to for links")

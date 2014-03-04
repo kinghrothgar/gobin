@@ -242,16 +242,16 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid := store.GetNewUID()
 	ip := getIpAddress(r)
+	uid, delUID, err := store.PutGob(gobData, ip)
 	gslog.Debug("HANDLER: uid: %s, ip: %s", uid, ip)
-	if err := store.PutGob(uid, gobData, ip); err != nil {
+	if err != nil {
 		gslog.Error("HANDLER: put gob failed with error: %s", err.Error())
 		returnHTTPError(w, "PostGob", "failed to save gob", http.StatusInternalServerError)
 		return
 	}
 
-	url := templ.BuildURL(uid)
+	url := templ.BuildURLs(uid, delUID)
 	w.Write([]byte(url))
 }
 
@@ -268,15 +268,15 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 		returnHTTPError(w, "PostHordeGob", "gob empty", http.StatusBadRequest)
 		return
 	}
-	uid := store.GetNewUID()
 	ip := getIpAddress(r)
-	gslog.Debug("uid: %s, ip: %s", uid, ip)
-	if err := store.PutHordeGob(uid, hordeName, gobData, ip); err != nil {
+	uid, delUID, err := store.PutHordeGob(hordeName, gobData, ip)
+	gslog.Debug("HANDLER: uid: %s, ip: %s", uid, ip)
+	if err != nil {
 		gslog.Error("HANDLER: put horde gob failed with error: %s", err.Error())
 		returnHTTPError(w, "PostHordeGob", "failed to save gob", http.StatusInternalServerError)
 	}
 
-	url := templ.BuildURL(uid)
+	url := templ.BuildURLs(uid, delUID)
 	w.Write([]byte(url))
 }
 

@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	MB   int = 1048576
-	DAY  int = 86400
-	YEAR     = 365 * DAY
+	MB      int = 1048576
+	DAY     int = 86400
+	WEEK        = 7 * DAY
+	YEAR        = 365 * DAY
+	DEL_TTL     = WEEK
 )
 
 type RedisStore struct {
@@ -28,6 +30,20 @@ func gobKey(uid string) string {
 // hordekey forms the redis key from the horde name
 func hordeKey(hordeName string) string {
 	return "horde:" + hordeName
+}
+
+// delKey forms the redis key from the delete uid
+func delKey(delUID string) string {
+	return "del:" + delUID
+}
+
+func uidToHordeKey(uid string) string {
+	return "uid.to.horde:" + uid
+}
+
+// deletedKey forms a key that will be inaccessble to users
+func deletedKey(key string) string {
+	return key + ":deleted"
 }
 
 // gobEncode encodes a storage gob into a byte array
@@ -71,12 +87,47 @@ func (redisStore *RedisStore) setTTL(client *pool.Client, uid string, gobBytes [
 	}
 }
 
+// deleteExpire modifies the key so that it is inaccessble via normal methods
+// and sets the TTL to a week
+func (redisStore *RedisStore) deleteExpire(key string) error {
+	client, err := redisStore.Get()
+	if err != nil {
+		return err
+	}
+	// Make gob inaccessble using normal key
+	reply := client.Cmd("RENAME", key, deletedKey(key))
+	if reply.Err != nil {
+		return reply.Err
+	}
+	reply = client.Cmd("EXPIRE", key, DEL_TTL)
+	if i, _ := reply.Int(); i == 0 {
+		gslog.Error("REDIS: could not set expire time for deleted key '%s'", key)
+	}
+	return reply.Err
+}
+
 func (redisStore *RedisStore) UIDExist(uid string) (bool, error) {
 	client, err := redisStore.Get()
 	if err != nil {
 		return false, err
 	}
 	reply := client.Cmd("GET", gobKey(uid))
+	if reply.Err != nil {
+		return false, reply.Err
+	}
+	redisStore.Put(client)
+	if reply.Type == redis.NilReply {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (redisStore *RedisStore) DelUIDExist(delUID string) (bool, error) {
+	client, err := redisStore.Get()
+	if err != nil {
+		return false, err
+	}
+	reply := client.Cmd("GET", delKey(delUID))
 	if reply.Err != nil {
 		return false, reply.Err
 	}
@@ -97,6 +148,10 @@ func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
 		return err
 	}
 	if reply := client.Cmd("SET", gobKey(gob.UID), gobBytes); reply.Err != nil {
+		return reply.Err
+	}
+	// TODO: should I just run this in a goroutine and not worry about it?
+	if reply := client.Cmd("SET", delKey(gob.DelUID), gob.UID); reply.Err != nil {
 		return reply.Err
 	}
 	go redisStore.setTTL(client, gob.UID, gobBytes)
@@ -124,8 +179,25 @@ func (redisStore *RedisStore) GetGob(uid string) (*storage.Gob, error) {
 }
 
 func (redisStore *RedisStore) DelGob(uid string) error {
-	//delete(redisStore.gobs, uid)
-	return nil
+	key := gobKey(uid)
+	// Make gob inaccessble using normal methods
+	return redisStore.deleteExpire(key)
+}
+
+func (redisStore *RedisStore) DelUIDToUID(delUID string) (string, error) {
+	client, err := redisStore.Get()
+	if err != nil {
+		return "", err
+	}
+	reply := client.Cmd("GET", delKey(delUID))
+	if reply.Err != nil {
+		return "", reply.Err
+	}
+	uid, err := reply.Str()
+	if err != nil {
+		return "", err
+	}
+	return uid, nil
 }
 
 func (redisStore *RedisStore) GetHorde(hordeName string) (storage.Horde, error) {
@@ -155,6 +227,22 @@ func (redisStore *RedisStore) GetHorde(hordeName string) (storage.Horde, error) 
 	return horde, nil
 }
 
+func (redisStore *RedisStore) UIDToHorde(uid string) (string, error) {
+	client, err := redisStore.Get()
+	if err != nil {
+		return "", err
+	}
+	reply := client.Cmd("GET", uidToHordeKey(uid))
+	if reply.Err != nil {
+		return "", reply.Err
+	}
+	hordeName, err := reply.Str()
+	if err != nil {
+		return "", err
+	}
+	return hordeName, nil
+}
+
 func (redisStore *RedisStore) AddUIDHorde(hordeName string, uid string) error {
 	now := time.Now()
 	uidCreated := storage.UIDCreated{UID: uid, Created: now.String()}
@@ -170,7 +258,7 @@ func (redisStore *RedisStore) AddUIDHorde(hordeName string, uid string) error {
 	if reply := client.Cmd("ZADD", hordeKey(hordeName), now.UnixNano(), buf.Bytes()); reply.Err != nil {
 		return reply.Err
 	}
-	if reply := client.Cmd("SET", "uid.to.horde:"+uid, hordeName); reply.Err != nil {
+	if reply := client.Cmd("SET", uidToHordeKey(uid), hordeName); reply.Err != nil {
 		return reply.Err
 	}
 	redisStore.Put(client)

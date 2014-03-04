@@ -47,11 +47,15 @@ func main() {
 		gslog.SetLogFile(logFile)
 	}
 
-	handler.Initialize(conf.GetInt("uidlength"))
-	if err := store.Initialize(conf.GetStr("storetype"), conf.GetStr("storeconf"), conf.GetInt("uidlength")); err != nil {
+	storeType, storeConf := conf.GetStr("storetype"), conf.GetStr("storeconf")
+	uidLen, delUIDLen := conf.GetInt("uidlength"), conf.GetInt("deluidlength")
+	handler.Initialize(uidLen)
+	if err := store.Initialize(storeType, storeConf, uidLen, delUIDLen); err != nil {
 		gslog.Fatal("MAIN: failed to initialize storage with error: %s", err.Error())
 	}
-	if err := templ.Initialize(conf.GetStr("htmltemplates"), conf.GetStr("texttemplates"), conf.GetStr("domain")); err != nil {
+	htmlTemps, textTemps := conf.GetStr("htmltemplates"), conf.GetStr("texttemplates")
+	domain := conf.GetStr("domain")
+	if err := templ.Initialize(htmlTemps, textTemps, domain); err != nil {
 		gslog.Fatal("MAIN: failed to initialize templates with error: %s", err.Error())
 	}
 
@@ -60,12 +64,10 @@ func main() {
 	mux.Get("/", http.HandlerFunc(handler.GetRoot))
 	// Could be horde or uid
 	mux.Get("/:uid", http.HandlerFunc(handler.GetGob))
+	mux.Get("/delete/:delUID", http.HandlerFunc(handler.DelGob))
 	mux.Get("/h/:horde", http.HandlerFunc(handler.GetHorde))
 	mux.Post("/", http.HandlerFunc(handler.PostGob))
 	mux.Post("/:horde", http.HandlerFunc(handler.PostHordeGob))
-	// idkey is and string that contains the id and possibly an api key
-	// TODO: will it contain gets?
-	mux.Del("/:uidkey", http.HandlerFunc(handler.DelGob))
 
 	http.Handle("/", mux)
 
@@ -104,9 +106,14 @@ func main() {
 				gslog.SetLogFile(logFile)
 			}
 
-			handler.Initialize(conf.GetInt("uidlength"))
-			store.Configure(conf.GetStr("storeconf"), conf.GetInt("uidlength"))
-			if err := templ.Reload(conf.GetStr("htmltemplates"), conf.GetStr("texttemplates"), conf.GetStr("domain")); err != nil {
+			storeConf = conf.GetStr("storeconf")
+			uidLen, delUIDLen = conf.GetInt("uidlength"), conf.GetInt("deluidlength")
+			handler.Initialize(uidLen)
+			store.Configure(storeConf, uidLen, delUIDLen)
+
+			htmlTemps, textTemps = conf.GetStr("htmltemplates"), conf.GetStr("texttemplates")
+			domain = conf.GetStr("domain")
+			if err := templ.Reload(htmlTemps, textTemps, domain); err != nil {
 				gslog.Error("MAIN: failed to reload templates with error: %s", err.Error())
 			}
 		case <-shutdownCh:

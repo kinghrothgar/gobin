@@ -28,6 +28,15 @@ func (memoryStore *MemoryStore) UIDExist(uid string) (bool, error) {
 	return false, nil
 }
 
+func (memoryStore *MemoryStore) DelUIDExist(uid string) (bool, error) {
+	memoryStore.lock.RLock()
+	defer memoryStore.lock.RUnlock()
+	if _, ok := memoryStore.gobs[uid]; ok {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (memoryStore *MemoryStore) PutGob(gob *storage.Gob) error {
 	memoryStore.lock.Lock()
 	defer memoryStore.lock.Unlock()
@@ -106,7 +115,7 @@ func (memoryStore *MemoryStore) Initialize(confStr string) error {
 }
 
 func (memoryStore *MemoryStore) Configure(confStr string) {
-	return 
+	return
 }
 
 func New(confStr string) *MemoryStore {

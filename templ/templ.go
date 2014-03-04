@@ -107,6 +107,8 @@ func GetHomePage(contentType string) ([]byte, error) {
 	return executeTemplate(contentType, "homePage", p)
 }
 
-func BuildURL(uid string) string {
-	return "http://" + domain + "/" + uid + "\n"
+func BuildURLs(uid string, delUID string) string {
+	urls := "http://" + domain + "/" + uid + "\n"
+	urls += "http://" + domain + "/delete/" + delUID + "\n"
+	return urls
 }

@@ -6,6 +6,7 @@ import (
 
 type Gob struct {
 	UID     string
+	DelUID  string
 	Type    string
 	Data    []byte
 	Created time.Time
