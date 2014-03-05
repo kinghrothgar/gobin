@@ -48,7 +48,7 @@ SYNOPSIS
 DESCRIPTION
     Uploads output of &lt;command&gt; to {{.Domain}} or {{.Domain}}/&lt;horde&gt; and returns
     link to the gob.  All gobs pasted to a horde (a group of gobs or goblins) 
-    can be seen by going to http://{{.Domain}}/h/&lt;horde&gt;.
+    can be seen by going to http://{{.Domain}}/horde/&lt;horde&gt;.
 
     Add ?&lt;lang&gt; to resulting url for line numbers and syntax highlighting.  Github style
     markdown is rendered instead of highlighting using the same method (?markdown).
@@ -69,7 +69,7 @@ EXAMPLES
     Horde Upload:
     ~$ cat hatersgonnahate.gif | curl -F 'gob=&lt;-' http://{{.Domain}}/gifs
        http://{{.Domain}}/VZiY
-    ~$ firefox http://{{.Domain}}/h/gifs
+    ~$ firefox http://{{.Domain}}/horde/gifs
 
 SEE ALSO
     <a href="http://github.com/kinghrothgar/goblin">http://github.com/kinghrothgar/goblin</a>

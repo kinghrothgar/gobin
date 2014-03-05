@@ -62,11 +62,11 @@ func main() {
 	// Setup route handlers
 	mux := pat.New()
 	mux.Get("/", http.HandlerFunc(handler.GetRoot))
-	// Could be horde or uid
 	mux.Get("/:uid", http.HandlerFunc(handler.GetGob))
 	mux.Get("/delete/:delUID", http.HandlerFunc(handler.DelGob))
-	mux.Get("/h/:horde", http.HandlerFunc(handler.GetHorde))
+	mux.Get("/horde/:horde", http.HandlerFunc(handler.GetHorde))
 	mux.Post("/", http.HandlerFunc(handler.PostGob))
+	// TODO: Should I post to /horde/:horde
 	mux.Post("/:horde", http.HandlerFunc(handler.PostHordeGob))
 
 	http.Handle("/", mux)
