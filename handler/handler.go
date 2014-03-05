@@ -65,7 +65,7 @@ func ipAddrFromRemoteAddr(s string) string {
 
 func returnHTTPError(w http.ResponseWriter, funcName string, errMessage string, status int) {
 	gslog.Debug("HANDLER: %s returned error to user: %s", funcName, errMessage)
-	http.Error(w, errMessage, http.StatusInternalServerError)
+	http.Error(w, "Error: "+errMessage, http.StatusInternalServerError)
 }
 
 func getIpAddress(r *http.Request) string {
@@ -269,7 +269,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
 	if !validHordeName(hordeName) {
-		returnHTTPError(w, "PostHordeGob", hordeName+" not found", http.StatusNotFound)
+		returnHTTPError(w, "PostHordeGob", "horde name can only contain letters", http.StatusNotFound)
 		return
 	}
 	gobData := getGobData(w, r)
