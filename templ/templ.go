@@ -32,6 +32,7 @@ type FormPage struct {
 	Domain string
 	Scheme string
 	Title  string
+	Tabs   *Tabs
 }
 
 type URLPage struct {
@@ -135,7 +136,8 @@ func GetHomePage(contentType string) ([]byte, error) {
 }
 
 func GetFormPage(scheme string) ([]byte, error) {
-	p := &FormPage{Domain: domain, Scheme: scheme, Title: "gobin: a cli pastebin"}
+	t := &Tabs{Form: true}
+	p := &FormPage{Domain: domain, Scheme: scheme, Title: "gobin: a cli pastebin", Tabs: t}
 	return executeTemplate("HTML", "formPage", p)
 }
 
