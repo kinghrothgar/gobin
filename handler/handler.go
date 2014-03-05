@@ -19,16 +19,8 @@ var (
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
-	//parse the multipart form in the request
-	err := r.ParseMultipartForm(11534336) // 11 MB
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return nil
-	}
-
-	//get a ref to the parsed multipart form
-	m := r.MultipartForm
-	str := m.Value["gob"][0]
+	str := r.FormValue("gob")
+	// TODO: maybe keep as string until we return it?
 	return []byte(str)
 }
 
