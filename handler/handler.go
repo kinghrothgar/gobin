@@ -168,13 +168,22 @@ func Initialize(uidLength int, delUIDLength int) {
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("HANDLER: GetRoot called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
-	params := r.URL.Query()
-	gslog.Debug("query params: %+v", params)
 	pageType := getPageType(r)
 	pageBytes, err := templ.GetHomePage(pageType)
 	if err != nil {
 		gslog.Error("HANDLER: failed to get home with error: %s", err.Error())
 		returnHTTPError(w, "GetRoot", "failed to get home", http.StatusInternalServerError)
+		return
+	}
+	w.Write(pageBytes)
+}
+
+func GetForm(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("HANDLER: GetForm called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
+	pageBytes, err := templ.GetFormPage(getScheme(r))
+	if err != nil {
+		gslog.Error("HANDLER: failed to get form with error: %s", err.Error())
+		returnHTTPError(w, "GetRoot", "failed to get form", http.StatusInternalServerError)
 		return
 	}
 	w.Write(pageBytes)
@@ -260,13 +269,19 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 	uid, delUID, err := store.PutGob(gobData, ip)
 	gslog.Debug("HANDLER: uid: %s, ip: %s", uid, ip)
 	if err != nil {
-		gslog.Error("HANDLER: put gob failed with error: %s", err.Error())
+		gslog.Error("HANDLER: post gob failed with error: %s", err.Error())
 		returnHTTPError(w, "PostGob", "failed to save gob", http.StatusInternalServerError)
 		return
 	}
 
-	url := templ.BuildURLs(getScheme(r), uid, delUID)
-	w.Write([]byte(url))
+	pageType := getPageType(r)
+	pageBytes, err := templ.GetURLPage(getScheme(r), pageType, uid, delUID)
+	if err != nil {
+		gslog.Debug("HANDLER: post gob failed with error: %s", err.Error())
+		returnHTTPError(w, "GetHorde", "failed to save gob", http.StatusInternalServerError)
+		return
+	}
+	w.Write(pageBytes)
 }
 
 func PostHordeGob(w http.ResponseWriter, r *http.Request) {

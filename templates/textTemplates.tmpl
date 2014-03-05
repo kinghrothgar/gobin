@@ -43,3 +43,7 @@ SEE ALSO
     http://github.com/kinghrothgar/goblin
     http://github.com/kinghrothgar/goblin-scripts
 {{end}}
+
+{{define "urlPage"}}{{.Scheme}}://{{.Domain}}/{{.UID}}
+{{.Scheme}}://{{.Domain}}/delete/{{.DelUID}}
+{{end}}

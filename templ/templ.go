@@ -21,6 +21,20 @@ type HomePage struct {
 	Title  string
 }
 
+type FormPage struct {
+	Domain string
+	Scheme string
+	Title  string
+}
+
+type URLPage struct {
+	Domain string
+	Scheme string
+	Title  string
+	UID    string
+	DelUID string
+}
+
 type GobPage struct {
 	Title    string
 	Language string
@@ -96,7 +110,11 @@ func GetHordePage(scheme string, contentType string, hordeName string, horde sto
 
 func GetGobPage(language string, data []byte) ([]byte, error) {
 	if language == "markdown" {
-		p := &MDPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: htmlTemplate.HTML(string(data))}
+		p := &MDPage{
+			Title:    "gob: " + language + " syntax highlighted",
+			Language: language,
+			Data:     htmlTemplate.HTML(string(data)),
+		}
 		return executeTemplate("HTML", "mdPage", p)
 	}
 	p := &GobPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: string(data)}
@@ -108,8 +126,24 @@ func GetHomePage(contentType string) ([]byte, error) {
 	return executeTemplate(contentType, "homePage", p)
 }
 
+func GetFormPage(scheme string) ([]byte, error) {
+	p := &FormPage{Domain: domain, Scheme: scheme, Title: "gobin: a cli pastebin"}
+	return executeTemplate("HTML", "formPage", p)
+}
+
+func GetURLPage(scheme, contentType, uid, delUID string) ([]byte, error) {
+	p := &URLPage{
+		Domain: domain,
+		Scheme: scheme,
+		Title:  "gobin: a cli pastebin",
+		UID:    uid,
+		DelUID: delUID,
+	}
+	return executeTemplate(contentType, "urlPage", p)
+}
+
 // BuildURLs builds the urls given the scheme (http/https), uid and delUID
-func BuildURLs(scheme string, uid string, delUID string) string {
+func BuildURLs(scheme, uid, delUID string) string {
 	urls := scheme + "://" + domain + "/" + uid + "\n"
 	urls += scheme + "://" + domain + "/delete/" + delUID + "\n"
 	return urls
