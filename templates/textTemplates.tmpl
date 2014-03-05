@@ -1,4 +1,4 @@
-{{define "hordePage"}}{{$domain := .Domain}}{{with .Horde}}{{range .}}http://{{$domain}}/{{.UID}}    {{.Created}}
+{{define "hordePage"}}{{$domain := .Domain}}{{$scheme := .Scheme}}{{with .Horde}}{{range .}}{{$scheme}}://{{$domain}}/{{.UID}}    {{.Created}}
 {{end}}{{end}}{{end}}
 
 {{define "homePage"}}gobin(1)                             GOBIN                             gobin(1)

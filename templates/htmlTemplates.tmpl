@@ -25,7 +25,7 @@
 {{define "hordeBody"}}
 <body>
 <pre>
-{{$domain := .Domain}}{{with .Horde}}{{range .}}<a href="http://{{$domain}}/{{.UID}}">http://{{$domain}}/{{.UID}}</a>    {{.Created}}
+{{$domain := .Domain}}{{$scheme := .Scheme}}{{with .Horde}}{{range .}}<a href="{{$scheme}}://{{$domain}}/{{.UID}}">{{$scheme}}://{{$domain}}/{{.UID}}</a>    {{.Created}}
 {{end}}{{end}}
 </pre>
 {{template "googleAnalytics"}}

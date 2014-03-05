@@ -15,7 +15,7 @@ var (
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
 	textContentTypeReg  = regexp.MustCompile("^text/")
 	uidLen              int
-	delUIDLen			int
+	delUIDLen           int
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
@@ -85,6 +85,11 @@ func getIpAddress(r *http.Request) string {
 		return parts[0]
 	}
 	return net.ParseIP(hdrRealIp).String()
+}
+
+func getScheme(r *http.Request) string {
+	hdr := r.Header
+	return hdr.Get("X-Real-Scheme")
 }
 
 func getPageType(r *http.Request) string {
@@ -234,7 +239,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pageType := getPageType(r)
-	pageBytes, err := templ.GetHordePage(pageType, hordeName, horde)
+	pageBytes, err := templ.GetHordePage(getScheme(r), pageType, hordeName, horde)
 	if err != nil {
 		gslog.Debug("HANDLER: failed to get horde with error: %s", err.Error())
 		returnHTTPError(w, "GetHorde", "failed to get horde", http.StatusInternalServerError)
@@ -260,7 +265,7 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := templ.BuildURLs(uid, delUID)
+	url := templ.BuildURLs(getScheme(r), uid, delUID)
 	w.Write([]byte(url))
 }
 
@@ -286,7 +291,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := templ.BuildURLs(uid, delUID)
+	url := templ.BuildURLs(getScheme(r), uid, delUID)
 	w.Write([]byte(url))
 }
 
@@ -314,5 +319,5 @@ func DelGob(w http.ResponseWriter, r *http.Request) {
 		returnHTTPError(w, "DelGob", "failed to delete gob", http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte("successfully deleted "+uid))
+	w.Write([]byte("successfully deleted " + uid))
 }

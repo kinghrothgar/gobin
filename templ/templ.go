@@ -11,6 +11,7 @@ import (
 
 type HordePage struct {
 	Domain string
+	Scheme string
 	Title  string
 	Horde  storage.Horde
 }
@@ -88,8 +89,8 @@ func Reload(htmlTemplatesPath string, textTemplatesPath string, confDomain strin
 	return nil
 }
 
-func GetHordePage(contentType string, hordeName string, horde storage.Horde) ([]byte, error) {
-	p := &HordePage{Domain: domain, Title: "horde: " + hordeName, Horde: horde}
+func GetHordePage(scheme string, contentType string, hordeName string, horde storage.Horde) ([]byte, error) {
+	p := &HordePage{Domain: domain, Scheme: scheme, Title: "horde: " + hordeName, Horde: horde}
 	return executeTemplate(contentType, "hordePage", p)
 }
 
@@ -107,8 +108,9 @@ func GetHomePage(contentType string) ([]byte, error) {
 	return executeTemplate(contentType, "homePage", p)
 }
 
-func BuildURLs(uid string, delUID string) string {
-	urls := "http://" + domain + "/" + uid + "\n"
-	urls += "http://" + domain + "/delete/" + delUID + "\n"
+// BuildURLs builds the urls given the scheme (http/https), uid and delUID
+func BuildURLs(scheme string, uid string, delUID string) string {
+	urls := scheme + "://" + domain + "/" + uid + "\n"
+	urls += scheme + "://" + domain + "/delete/" + delUID + "\n"
 	return urls
 }
