@@ -4,7 +4,8 @@ import (
 	"crypto/rand"
 	"errors"
 	"github.com/kinghrothgar/goblin/storage"
-	"github.com/kinghrothgar/goblin/storage/memory"
+	"github.com/grooveshark/golib/gslog"
+	//"github.com/kinghrothgar/goblin/storage/memory"
 	"github.com/kinghrothgar/goblin/storage/redis"
 	"strings"
 	"time"
@@ -21,10 +22,9 @@ type DataStore interface {
 	GetGob(string) (*storage.Gob, error)
 	DelGob(string) error
 	DelUIDToUID(string) (string, error)
-	UIDToHorde(string) (string, error)
 	GetHorde(string) (storage.Horde, error)
 	AddUIDHorde(string, string) error
-	DelUIDHorde(string, string) error
+	DelUIDHorde(string) error
 	Configure(string)
 }
 
@@ -90,19 +90,24 @@ func DelUIDToUID(delUID string) (string, error) {
 }
 
 func DelGob(uid string) error {
+	if err := dataStore.DelGob(uid); err != nil {
+		return err
+	}
+	return dataStore.DelUIDHorde(uid)
 }
 
 func Initialize(storeType string, confStr string, uidLength int, delUIDLength int) error {
 	uidLen = uidLength
 	delUIDLen = delUIDLength
 	switch strings.ToUpper(storeType) {
-	case "MEMORY":
-		dataStore = memory.New(confStr)
-		return nil
+	//case "MEMORY":
+	//	dataStore = memory.New(confStr)
+	//	return nil
 	case "REDIS":
 		dataStore = redis.New(confStr)
 		return nil
 	default:
+		gslog.Debug("STORE: initialized with store type: %s, conf string: %s, uid length: %d, del uid length: %d", storeType, confStr, uidLen, delUIDLen)
 	}
 	return errors.New("invalid store type")
 }
@@ -112,10 +117,11 @@ func Configure(confStr string, uidLength int, delUIDLength int) {
 	uidLen = uidLength
 	delUIDLen = delUIDLength
 	dataStore.Configure(confStr)
+	gslog.Debug("STORE: configured with conf string: %s, uid length: %d, del uid length: %d", confStr, uidLen, delUIDLen)
 }
 
 func randomString(length int) string {
-	bytes := make([]byte, uidLen)
+	bytes := make([]byte, length)
 	rand.Read(bytes)
 	for i, b := range bytes {
 		bytes[i] = ALPHA[b%byte(len(ALPHA))]

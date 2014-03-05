@@ -15,6 +15,7 @@ var (
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
 	textContentTypeReg  = regexp.MustCompile("^text/")
 	uidLen              int
+	delUIDLen			int
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
@@ -31,10 +32,16 @@ func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	return []byte(str)
 }
 
+func validDelUID(delUID string) bool {
+	// prevents a lookup if it's obviously crap
+	if len(delUID) > delUIDLen || !alphaReg.MatchString(delUID) {
+		return false
+	}
+	return true
+}
+
 func validUID(uid string) bool {
-	// This is so someone can't access a horde goblin
-	// by just puting the 'horde#uid' instead of 'horde/uid'
-	// and prevents a lookup if it's obviously crap
+	// prevents a lookup if it's obviously crap
 	if len(uid) > uidLen || !alphaReg.MatchString(uid) {
 		return false
 	}
@@ -148,8 +155,10 @@ func getLanguage(r *http.Request) string {
 
 // Must be called before any other functions are called
 // TODO: should I just called it SetUIDLen ?
-func Initialize(uidLength int) {
+func Initialize(uidLength int, delUIDLength int) {
 	uidLen = uidLength
+	delUIDLen = delUIDLength
+	gslog.Debug("HANDLER: initialized with uid length: %d, del uid length: %d", uidLen, delUIDLen)
 }
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
@@ -274,6 +283,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		gslog.Error("HANDLER: put horde gob failed with error: %s", err.Error())
 		returnHTTPError(w, "PostHordeGob", "failed to save gob", http.StatusInternalServerError)
+		return
 	}
 
 	url := templ.BuildURLs(uid, delUID)
@@ -282,4 +292,27 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 
 func DelGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("HANDLER: DelGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
+	params := r.URL.Query()
+	delUID := params.Get(":delUID")
+	if !validDelUID(delUID) {
+		returnHTTPError(w, "DelGob", delUID+" not found", http.StatusNotFound)
+		return
+	}
+	uid, err := store.DelUIDToUID(delUID)
+	if err != nil {
+		gslog.Error("HANDLER: delete gob failed with error: %s", err.Error())
+		returnHTTPError(w, "DelGob", "failed to delete gob", http.StatusInternalServerError)
+		return
+	}
+	if uid == "" {
+		returnHTTPError(w, "DelGob", delUID+" not found", http.StatusNotFound)
+		return
+	}
+	err = store.DelGob(uid)
+	if err != nil {
+		gslog.Error("HANDLER: delete gob failed with error: %s", err.Error())
+		returnHTTPError(w, "DelGob", "failed to delete gob", http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte("successfully deleted "+uid))
 }

@@ -49,7 +49,7 @@ func main() {
 
 	storeType, storeConf := conf.GetStr("storetype"), conf.GetStr("storeconf")
 	uidLen, delUIDLen := conf.GetInt("uidlength"), conf.GetInt("deluidlength")
-	handler.Initialize(uidLen)
+	handler.Initialize(uidLen, delUIDLen)
 	if err := store.Initialize(storeType, storeConf, uidLen, delUIDLen); err != nil {
 		gslog.Fatal("MAIN: failed to initialize storage with error: %s", err.Error())
 	}
@@ -108,7 +108,7 @@ func main() {
 
 			storeConf = conf.GetStr("storeconf")
 			uidLen, delUIDLen = conf.GetInt("uidlength"), conf.GetInt("deluidlength")
-			handler.Initialize(uidLen)
+			handler.Initialize(uidLen, delUIDLen)
 			store.Configure(storeConf, uidLen, delUIDLen)
 
 			htmlTemps, textTemps = conf.GetStr("htmltemplates"), conf.GetStr("texttemplates")

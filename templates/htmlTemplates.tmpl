@@ -50,7 +50,8 @@ DESCRIPTION
     link to the gob.  All gobs pasted to a horde (a group of gobs or goblins) 
     can be seen by going to http://{{.Domain}}/h/&lt;horde&gt;.
 
-    Add ?LANG to resulting url for line numbers and syntax highlighting.
+    Add ?&lt;lang&gt; to resulting url for line numbers and syntax highlighting.  Github style
+    markdown is rendered instead of highlighting using the same method (?markdown).
 
     &lt;horde&gt; can be any combination of upper or lower case letters
 
@@ -107,6 +108,7 @@ SEE ALSO
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="/static/css/swiss.css">
     <title>{{.Title}}</title>
 </head>
 <body>
