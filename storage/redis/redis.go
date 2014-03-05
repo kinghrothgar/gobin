@@ -276,6 +276,9 @@ func (redisStore *RedisStore) uidToHorde(client *pool.Client, uid string) (strin
 	if reply.Err != nil {
 		return "", reply.Err
 	}
+	if reply.Type == redis.NilReply {
+		return "", nil
+	}
 	hordeName, err := reply.Str()
 	if err != nil {
 		return "", err
@@ -293,6 +296,10 @@ func (redisStore *RedisStore) DelUIDHorde(uid string) error {
 	hordeName, err := redisStore.uidToHorde(client, uid)
 	if err != nil {
 		return err
+	}
+	if hordeName == "" {
+		redisStore.Put(client)
+		return nil
 	}
 	if reply := client.Cmd("LREM", hordeListKey(hordeName), 1, uid); reply.Err != nil {
 		return reply.Err
