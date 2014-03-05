@@ -9,6 +9,12 @@ import (
 	textTemplate "text/template"
 )
 
+type Tabs struct {
+	Home bool
+	Form bool
+	Top bool
+}
+
 type HordePage struct {
 	Domain string
 	Scheme string
@@ -19,6 +25,7 @@ type HordePage struct {
 type HomePage struct {
 	Domain string
 	Title  string
+	Tabs   *Tabs
 }
 
 type FormPage struct {
@@ -122,7 +129,8 @@ func GetGobPage(language string, data []byte) ([]byte, error) {
 }
 
 func GetHomePage(contentType string) ([]byte, error) {
-	p := &HomePage{Domain: domain, Title: "gobin: a cli pastebin"}
+	t := &Tabs{Home: true}
+	p := &HomePage{Domain: domain, Title: "gobin: a cli pastebin", Tabs: t}
 	return executeTemplate(contentType, "homePage", p)
 }
 

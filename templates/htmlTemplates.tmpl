@@ -16,7 +16,7 @@
 
 {{define "head"}}<head>
     <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
-    <link rel="stylesheet" href="/static/css/code-block.css">
+    <link rel="stylesheet" href="/static/css/main.css">
     {{template "icons"}}
     <title>{{.Title}}</title>
 </head>{{end}}
@@ -27,6 +27,14 @@
     {{template "icons"}}
     <title>{{.Title}}</title>
 </head>{{end}}
+
+{{define "tabs"}}<div class="tabs">
+    <ul>
+        <li{{if .Home}} class="selected-tab"{{end}}><a href="/">man</a></li>
+        <li{{if .Form}} class="selected-tab"{{end}}><a href="/new/glob">upload</a></li>
+        <li{{if .Top}} class="selected-tab"{{end}}><a href="/">hordes</a></li>
+    </ul>
+</div>{{end}}
 
 
 {{define "googleAnalytics"}}<script>
@@ -51,6 +59,8 @@
 
 {{define "homeBody"}}
 <body>
+{{template "tabs" .Tabs}}
+<div class="content">
 <span class="code-block">gobin(1)                             GOBIN                             gobin(1)
 
 NAME
@@ -68,8 +78,9 @@ DESCRIPTION
     link to the gob.  All gobs pasted to a horde (a group of gobs or goblins) 
     can be seen by going to http://{{.Domain}}/horde/&lt;horde&gt;.
 
-    Add ?&lt;lang&gt; to resulting url for line numbers and syntax highlighting.  Github style
-    markdown is rendered instead of highlighting using the same method (?markdown).
+    Add ?&lt;lang&gt; to resulting url for line numbers and syntax highlighting.
+    Github style markdown is rendered instead of highlighting using the same 
+    method (?markdown).
 
     &lt;horde&gt; can be any combination of upper or lower case letters
 
@@ -94,6 +105,7 @@ SEE ALSO
     <a href="http://github.com/kinghrothgar/goblin-scripts">http://github.com/kinghrothgar/goblin-scripts</a>
     <form action="/new/gob"><input type="submit" value="Upload Form"></form>
 </span>
+</div>
 {{template "googleAnalytics"}}
 </body>
 {{end}}
@@ -127,10 +139,13 @@ SEE ALSO
 <html>
 {{template "head" .}}
 <body>
+{{template "tabs" .Tabs}}
+<div class="content">
     <form action="{{.Scheme}}://{{.Domain}}" method="POST">
         <textarea name="gob" cols="80" rows="24"></textarea><br>
         <button type="submit">Upload</button>
     </form>
+</div>
 </body>
 </html>
 {{end}}
@@ -138,8 +153,13 @@ SEE ALSO
 {{define "urlPage"}}<!DOCTYPE html>
 <html>
 {{template "head" .}}
-<body><span class="code-block"><a href="{{.Scheme}}://{{.Domain}}/{{.UID}}">{{.Scheme}}://{{.Domain}}/{{.UID}}</a>
+<body>
+{{template "tabs" .Tabs}}
+<div class="content">
+<span class="code-block"><a href="{{.Scheme}}://{{.Domain}}/{{.UID}}">{{.Scheme}}://{{.Domain}}/{{.UID}}</a>
 <a href="{{.Scheme}}://{{.Domain}}/delete/{{.DelUID}}">{{.Scheme}}://{{.Domain}}/delete/{{.DelUID}}</a>
+</span>
+</div>
 </body>
 </html>
 {{end}}
