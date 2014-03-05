@@ -1,10 +1,15 @@
-{{define "head"}}
-<head>
+{{define "head"}}<head>
     <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
     <link rel="stylesheet" href="/static/css/code-block.css">
     <title>{{.Title}}</title>
-</head>
-{{end}}
+</head>{{end}}
+
+{{define "prismHead"}}<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="/static/css/prism-okaidia.css">
+    <title>{{.Title}}</title>
+</head>{{end}}
+
 
 {{define "googleAnalytics"}}<script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -28,7 +33,7 @@
 
 {{define "homeBody"}}
 <body>
-<pre><code class="language-none">gobin(1)                             GOBIN                             gobin(1)
+<span class="code-block">gobin(1)                             GOBIN                             gobin(1)
 
 NAME
     gobin: command line pastebin implemented by goblin written in go.
@@ -36,24 +41,24 @@ NAME
 
 SYNOPSIS
     Normal Upload:
-      COMMAND | curl -F 'gob=<-' http://{{.Domain}}
+      &lt;command&gt; | curl -F 'gob=&lt;-' http://{{.Domain}}
     Horde Upload:
-      COMMAND | curl -F 'gob=<-' http://{{.Domain}}/HORDE
+      &lt;command&gt; | curl -F 'gob=&lt;-' http://{{.Domain}}/&lt;horde&gt;
 
 DESCRIPTION
-    Uploads output of COMMAND to {{.Domain}} or {{.Domain}}/HORDE and returns
+    Uploads output of &lt;command&gt; to {{.Domain}} or {{.Domain}}/&lt;horde&gt; and returns
     link to the gob.  All gobs pasted to a horde (a group of gobs or goblins) 
-    can be seen by going to http://{{.Domain}}/h/HORDE.
+    can be seen by going to http://{{.Domain}}/h/&lt;horde&gt;.
 
     Add ?LANG to resulting url for line numbers and syntax highlighting.
 
-    HORDE can be any combination of upper or lower case letters
+    &lt;horde&gt; can be any combination of upper or lower case letters
 
     Images and pdfs should work well also.
 
 EXAMPLES
     Normal Upload:
-    ~$ echo "Gobin is awesome" | curl -F 'gob=<-' http://{{.Domain}}
+    ~$ echo "Gobin is awesome" | curl -F 'gob=&lt;-' http://{{.Domain}}
        http://{{.Domain}}/VZiY
     ~$ firefox http://{{.Domain}}/VZiY
 
@@ -61,13 +66,14 @@ EXAMPLES
     ~$ firefox http://{{.Domain}}/VZiY?go
 
     Horde Upload:
-    ~$ cat hatersgonnahate.gif | curl -F 'gob=<-' http://{{.Domain}}/gifs
+    ~$ cat hatersgonnahate.gif | curl -F 'gob=&lt;-' http://{{.Domain}}/gifs
        http://{{.Domain}}/VZiY
     ~$ firefox http://{{.Domain}}/h/gifs
 
 SEE ALSO
-    http://github.com/kinghrothgar/goblin
-</code></pre>
+    <a href="http://github.com/kinghrothgar/goblin">http://github.com/kinghrothgar/goblin</a>
+    <a href="http://github.com/kinghrothgar/goblin-scripts">http://github.com/kinghrothgar/goblin-scripts</a>
+</span>
 {{template "googleAnalytics"}}
 </body>
 {{end}}
@@ -88,14 +94,10 @@ SEE ALSO
 
 {{define "gobPage"}}<!DOCTYPE html>
 <html>
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
-    <link rel="stylesheet" href="/static/css/prism.css">
-    <title>{{.Title}}</title>
-</head>
+{{template "prismHead" .}}
 <body>
     <pre class="line-numbers"><code class="language-{{.Language}}">{{.Data}}</code></pre>
-    <script src="/static/js/prism.js"></script>
+    <script src="/static/js/prism-okaidia.js"></script>
 {{template "googleAnalytics"}}
 </body>
 </html>
