@@ -298,8 +298,9 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := templ.BuildURLs(getScheme(r), uid, delUID)
-	w.Write([]byte(url))
+	pageType := getPageType(r)
+	pageBytes, err := templ.GetURLPage(getScheme(r), pageType, uid, delUID)
+	w.Write(pageBytes)
 }
 
 func DelGob(w http.ResponseWriter, r *http.Request) {
@@ -326,5 +327,8 @@ func DelGob(w http.ResponseWriter, r *http.Request) {
 		returnHTTPError(w, "DelGob", "failed to delete gob", http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte("successfully deleted " + uid))
+
+	pageType := getPageType(r)
+	pageBytes, err := templ.GetMessPage(pageType, "successfully deleted " + uid)
+	w.Write(pageBytes)
 }

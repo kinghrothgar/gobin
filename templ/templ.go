@@ -28,6 +28,12 @@ type HomePage struct {
 	Tabs   *Tabs
 }
 
+type MessPage struct {
+	Title  string
+	Tabs   *Tabs
+	Message string
+}
+
 type FormPage struct {
 	Domain string
 	Scheme string
@@ -140,6 +146,12 @@ func GetFormPage(scheme string) ([]byte, error) {
 	t := &Tabs{Form: true}
 	p := &FormPage{Domain: domain, Scheme: scheme, Title: "gobin: a cli pastebin", Tabs: t}
 	return executeTemplate("HTML", "formPage", p)
+}
+
+func GetMessPage(contentType string, message string) ([]byte, error) {
+	t := &Tabs{}
+	p := &MessPage{Title: "gobin: a cli pastebin", Tabs: t, Message: message}
+	return executeTemplate(contentType, "messPage", p)
 }
 
 func GetURLPage(scheme, contentType, uid, delUID string) ([]byte, error) {

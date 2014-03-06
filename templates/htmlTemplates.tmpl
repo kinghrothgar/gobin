@@ -164,6 +164,18 @@ SEE ALSO
 </html>
 {{end}}
 
+{{define "messPage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+<body>
+{{template "tabs" .Tabs}}
+<div class="content">
+<span class="code-block">{{.Message}}</span>
+</div>
+</body>
+</html>
+{{end}}
+
 {{define "mdPage"}}<!DOCTYPE html>
 <html>
 <head>
