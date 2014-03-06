@@ -101,7 +101,7 @@ func (redisStore *RedisStore) deleteExpire(client *pool.Client, key string) erro
 	if reply.Err != nil {
 		return reply.Err
 	}
-	reply = client.Cmd("EXPIRE", key, DEL_TTL)
+	reply = client.Cmd("EXPIRE", deletedKey(key), DEL_TTL)
 	if reply.Err != nil {
 		return reply.Err
 	}
