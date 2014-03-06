@@ -41,6 +41,7 @@ type URLPage struct {
 	Title  string
 	UID    string
 	DelUID string
+	Tabs   *Tabs
 }
 
 type GobPage struct {
@@ -142,12 +143,14 @@ func GetFormPage(scheme string) ([]byte, error) {
 }
 
 func GetURLPage(scheme, contentType, uid, delUID string) ([]byte, error) {
+	t := &Tabs{Form: true}
 	p := &URLPage{
 		Domain: domain,
 		Scheme: scheme,
 		Title:  "gobin: a cli pastebin",
 		UID:    uid,
 		DelUID: delUID,
+		Tabs:	t,
 	}
 	return executeTemplate(contentType, "urlPage", p)
 }
