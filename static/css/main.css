@@ -16,7 +16,17 @@ span.code-block {
     display: block;
     width: 560px;
     margin: 0 auto;
-}     
+}
+
+form {
+    display: inline-block;
+    text-align: center;
+}
+
+.monospace {
+    font-family: monospace;
+    font-size: 90%;
+}
 
 .tabs {
     width: 700px;
