@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
+	"github.com/kinghrothgar/pygments"
 	htmlTemplate "html/template"
 	textTemplate "text/template"
 )
@@ -53,7 +54,7 @@ type URLPage struct {
 type GobPage struct {
 	Title    string
 	Language string
-	Data     string
+	Data     htmlTemplate.HTML
 }
 
 type MDPage struct {
@@ -66,6 +67,7 @@ var (
 	htmlTemplates *htmlTemplate.Template
 	textTemplates *textTemplate.Template
 	domain        string
+	pygmentizePath string
 )
 
 func executeTemplate(contentType string, templateName string, data interface{}) ([]byte, error) {
@@ -88,7 +90,7 @@ func unescaped(x string) interface{} {
 	return htmlTemplate.HTML(x)
 }
 
-func Initialize(htmlTemplatesPath string, textTemplatesPath string, confDomain string) error {
+func Initialize(htmlTemplatesPath string, textTemplatesPath string, confDomain string, confPygmentizePath string) error {
 	var err error
 	htmlTemplates, err = htmlTemplate.ParseFiles(htmlTemplatesPath)
 	if err != nil {
@@ -98,10 +100,11 @@ func Initialize(htmlTemplatesPath string, textTemplatesPath string, confDomain s
 	gslog.Debug("TEMPL: loaded htmlTemplates from %s", htmlTemplatesPath)
 	gslog.Debug("TEMPL: loaded textTemplates from %s", textTemplatesPath)
 	domain = confDomain
+	pygmentizePath = confPygmentizePath
 	return err
 }
 
-func Reload(htmlTemplatesPath string, textTemplatesPath string, confDomain string) error {
+func Reload(htmlTemplatesPath string, textTemplatesPath string, confDomain string, confPygmentizePath string) error {
 	if htmlTemplatesTemp, err := htmlTemplate.ParseFiles(htmlTemplatesPath); err != nil {
 		return err
 	} else {
@@ -115,6 +118,7 @@ func Reload(htmlTemplatesPath string, textTemplatesPath string, confDomain strin
 		gslog.Info("textTemplates loaded")
 	}
 	domain = confDomain
+	pygmentizePath = confPygmentizePath
 	return nil
 }
 
@@ -132,7 +136,18 @@ func GetGobPage(language string, data []byte) ([]byte, error) {
 		}
 		return executeTemplate("HTML", "mdPage", p)
 	}
-	p := &GobPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: string(data)}
+	pygments.Binary(pygmentizePath)
+	opts := pygments.Options{
+		"linenos": "inline",
+		"encoding": "utf-8",
+	}
+	code, err := pygments.Highlight(string(data), language, "html", opts)
+	if err != nil {
+		gslog.Error("Failed to highlight code: "+err.Error())
+		// Syntax highlighting has failed, so just display the raw data
+		return data, nil
+	}
+	p := &GobPage{Title: "gob: " + language + " syntax highlighted", Language: language, Data: htmlTemplate.HTML(code)}
 	return executeTemplate("HTML", "gobPage", p)
 }
 

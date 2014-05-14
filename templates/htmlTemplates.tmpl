@@ -21,9 +21,9 @@
     <title>{{.Title}}</title>
 </head>{{end}}
 
-{{define "prismHead"}}<head>
+{{define "monokaiHead"}}<head>
     <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
-    <link rel="stylesheet" href="/static/css/prism-okaidia.css">
+    <link rel="stylesheet" href="/static/css/monokai.css">
     {{template "icons"}}
     <title>{{.Title}}</title>
 </head>{{end}}
@@ -36,25 +36,12 @@
     </ul>
 </div>{{end}}
 
-
-{{define "googleAnalytics"}}<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-  ga('create', 'UA-48511628-1', 'gobin.io');
-  ga('send', 'pageview');
-</script>
-{{end}}
-
 {{define "hordeBody"}}
 <body>
 <pre>
 {{$domain := .Domain}}{{$scheme := .Scheme}}{{with .Horde}}{{range .}}<a href="{{$scheme}}://{{$domain}}/{{.UID}}">{{$scheme}}://{{$domain}}/{{.UID}}</a>    {{.Created}}
 {{end}}{{end}}
 </pre>
-{{template "googleAnalytics"}}
 </body>{{end}}
 
 {{define "homeBody"}}
@@ -106,7 +93,6 @@ SEE ALSO
     <form action="/new/gob"><input type="submit" value="Upload Form"></form>
 </span>
 </div>
-{{template "googleAnalytics"}}
 </body>
 {{end}}
 
@@ -126,11 +112,9 @@ SEE ALSO
 
 {{define "gobPage"}}<!DOCTYPE html>
 <html>
-{{template "prismHead" .}}
+{{template "monokaiHead" .}}
 <body>
-    <pre class="line-numbers"><code class="language-{{.Language}}">{{.Data}}</code></pre>
-    <script src="/static/js/prism-okaidia.js"></script>
-{{template "googleAnalytics"}}
+{{.Data}}
 </body>
 </html>
 {{end}}
@@ -193,7 +177,6 @@ SEE ALSO
         var $ = function (id) { return document.getElementById(id); };
         $("mdHTML").innerHTML = markdown.toHTML($("mdText").innerHTML);
     </script>
-{{template "googleAnalytics"}}
 </body>
 </html>
 {{end}}

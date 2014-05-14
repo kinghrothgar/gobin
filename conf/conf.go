@@ -28,6 +28,7 @@ func Parse() error {
 	f.RequiredStrParam("storetype", "the data store to use")
 	f.RequiredStrParam("storeconf", "a string of the form 'IP:PORT' to configure the data store")
 	f.RequiredStrParam("domain", "the domain to use to for links")
+	f.RequiredStrParam("pygmentizepath", "path to the pygmentize binary")
 	f.RequiredStrParam("listen", "a string of the form 'IP:PORT' which program will listen on")
 	f.FlagParam("V", "show version/build information", false)
 

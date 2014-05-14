@@ -55,7 +55,8 @@ func main() {
 	}
 	htmlTemps, textTemps := conf.GetStr("htmltemplates"), conf.GetStr("texttemplates")
 	domain := conf.GetStr("domain")
-	if err := templ.Initialize(htmlTemps, textTemps, domain); err != nil {
+	pygmentizePath := conf.GetStr("pygmentizepath")
+	if err := templ.Initialize(htmlTemps, textTemps, domain, pygmentizePath); err != nil {
 		gslog.Fatal("MAIN: failed to initialize templates with error: %s", err.Error())
 	}
 
@@ -135,7 +136,8 @@ func main() {
 
 			htmlTemps, textTemps = conf.GetStr("htmltemplates"), conf.GetStr("texttemplates")
 			domain = conf.GetStr("domain")
-			if err := templ.Reload(htmlTemps, textTemps, domain); err != nil {
+			pygmentizePath := conf.GetStr("pygmentizepath")
+			if err := templ.Reload(htmlTemps, textTemps, domain, pygmentizePath); err != nil {
 				gslog.Error("MAIN: failed to reload templates with error: %s", err.Error())
 			}
 		case <-shutdownCh:

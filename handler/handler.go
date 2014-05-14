@@ -108,17 +108,8 @@ func getLanguage(r *http.Request) string {
 	}
 	// Deal with aliases
 	switch lang {
-	case "javascript", "js":
-		lang = "javascript"
-		break
-	case "coffeescript", "coffee":
+	case "coffee":
 		lang = "coffeescript"
-		break
-	case "bash", "sh":
-		lang = "bash"
-		break
-	case "python", "py":
-		lang = "python"
 		break
 	case "groovy", "gvy", "gy", "gsh":
 		lang = "groovy"
@@ -129,23 +120,6 @@ func getLanguage(r *http.Request) string {
 	case "markdown", "md":
 		lang = "markdown"
 		break
-	case "c":
-	case "clike":
-	case "cpp":
-	case "csharp":
-	case "css":
-	case "css.selector":
-	case "gherkin":
-	case "go":
-	case "http":
-	case "java":
-	case "markup":
-	case "php":
-	case "scss":
-	case "sql":
-		break
-	default:
-		lang = ""
 	}
 	return lang
 }

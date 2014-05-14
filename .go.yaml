@@ -8,6 +8,11 @@ deps:
     ref: master
     path: github.com/bmizerany/pat
 
+  - loc: https://github.com/kinghrothgar/pygments
+    type: git
+    ref: master
+    path: github.com/kinghrothgar/pygments
+
   - loc: git@github.com:grooveshark/golib.git
     type: git
     ref: master
