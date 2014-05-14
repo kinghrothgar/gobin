@@ -138,7 +138,7 @@ func GetGobPage(language string, data []byte) ([]byte, error) {
 	}
 	pygments.Binary(pygmentizePath)
 	opts := pygments.Options{
-		"linenos": "inline",
+		"linenos": "table",
 		"encoding": "utf-8",
 	}
 	code, err := pygments.Highlight(string(data), language, "html", opts)
