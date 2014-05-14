@@ -1,8 +1,14 @@
-body { background-color:#333 }
-.highlight .lineno {
+body { 
+    background-color: #333;
+    font-family: 'Inconsolata';
+    margin: 0px;
+}
+pre { 
+    font-family: 'Inconsolata';
+}
+.highlighttable .linenodiv {
     color: #e6db74;
     border-right: 1px solid;
-    line-height: 16px;
     padding: 0 5px 0 5px;
 }
 .highlight .hll { background-color: #49483e }
