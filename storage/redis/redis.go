@@ -27,9 +27,19 @@ func gobKey(uid string) string {
 	return "gob:" + uid
 }
 
+// gobKey forms the redis key from the uid
+func gobInfoKey(uid string) string {
+	return "gobInfo:" + uid
+}
+
 // hordekey forms the redis key from the horde name for the list
 func hordeListKey(hordeName string) string {
 	return "hordeList:" + hordeName
+}
+
+// hordekey forms the redis key from the horde name for the list
+func fifoListKey(fifoName string) string {
+	return "fifoList:" + fifoName
 }
 
 // hordekey forms the redis key from the horde name for the hash
@@ -51,8 +61,9 @@ func deletedKey(key string) string {
 	return key + ":deleted"
 }
 
+
 // gobEncode encodes a storage gob into a byte array
-func gobEncode(gob *storage.Gob) ([]byte, error) {
+func gobInfoEncode(gob *storage.GobInfo) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	gobEnc := realgob.NewEncoder(buf)
 	err := gobEnc.Encode(gob)
@@ -68,12 +79,12 @@ func calculateTTL(gobBytes []byte) int {
 }
 
 // gobDecode decodes a byte array into a storage gob
-func gobDecode(gobBytes []byte) (*storage.Gob, error) {
-	gob := &storage.Gob{}
-	buf := bytes.NewReader(gobBytes)
+func gobInfoDecode(gobInfoBytes []byte) (*storage.GobInfo, error) {
+	gobInfo := &storage.GobInfo{}
+	buf := bytes.NewReader(gobInfoBytes)
 	gobDec := realgob.NewDecoder(buf)
-	err := gobDec.Decode(gob)
-	return gob, err
+	err := gobDec.Decode(gobInfo)
+	return gobInfo, err
 }
 
 // New returns a new RedisStore
@@ -84,11 +95,13 @@ func New(confStr string) *RedisStore {
 // setTTL sets the expire time for the uid based on the size.  Expects to be
 // run in a goroutine, so it does not return an error.  It instead logs it.
 // TODO: should I be passing the client in?
-func (redisStore *RedisStore) setTTLRoutine(client *pool.Client, uid string, gobBytes []byte) {
+func (redisStore *RedisStore) setTTLRoutine(client *pool.Client, uid string, data []byte) {
 	defer redisStore.Put(client)
-	ttl := calculateTTL(gobBytes)
-	reply := client.Cmd("EXPIRE", gobKey(uid), ttl)
-	if i, _ := reply.Int(); i == 0 {
+	ttl := calculateTTL(data)
+	// If both replay with 0 int, both were successful
+	i1, _ := client.Cmd("EXPIRE", gobKey(uid), ttl).Int()
+	i2, _ := client.Cmd("EXPIRE", gobInfoKey(uid), ttl).Int()
+	if (i1 + i2) == 0 {
 		gslog.Error("REDIS: could not set expire time for uid '%s' to %d seconds", uid, ttl)
 	}
 }
@@ -152,8 +165,8 @@ func (redisStore *RedisStore) DelUIDExist(delUID string) (bool, error) {
 	return true, nil
 }
 
-func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
-	gobBytes, err := gobEncode(gob)
+func (redisStore *RedisStore) PutGob(data []byte, gobInfo *storage.GobInfo) error {
+	gobInfoBytes, err := gobInfoEncode(gobInfo)
 	if err != nil {
 		return err
 	}
@@ -161,7 +174,24 @@ func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
 	if err != nil {
 		return err
 	}
-	if reply := client.Cmd("SET", gobKey(gob.UID), gobBytes); reply.Err != nil {
+	// Set the gob data and info to their respective keys
+	if reply := client.Cmd("MSET", gobKey(gobInfo.UID), data, gobInfoKey(gobInfo.UID), gobInfoBytes); reply.Err != nil {
+		return reply.Err
+	}
+	// TODO: should I just run this in a goroutine and not worry about it?
+	if reply := client.Cmd("SET", delKey(gobInfo.DelUID), gobInfo.UID); reply.Err != nil {
+		return reply.Err
+	}
+	go redisStore.setTTLRoutine(client, gobInfo.UID, data)
+	return nil
+}
+
+func (redisStore *RedisStore) AppendGob(uid string, data []byte) error {
+	client, err := redisStore.Get()
+	if err != nil {
+		return err
+	}
+	if reply := client.Cmd("APPEND", gobKey(gob.UID), data); reply.Err != nil {
 		return reply.Err
 	}
 	// TODO: should I just run this in a goroutine and not worry about it?
@@ -172,25 +202,49 @@ func (redisStore *RedisStore) PutGob(gob *storage.Gob) error {
 	return nil
 }
 
-func (redisStore *RedisStore) GetGob(uid string) (*storage.Gob, error) {
+func (redisStore *RedisStore) GetGob(uid string) ([]byte, *storage.GobInfo, error) {
 	client, err := redisStore.Get()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	reply := client.Cmd("GET", gobKey(uid))
+	reply := client.Cmd("MGET", gobKey(uid), gobInfoKey(uid))
 	if reply.Err != nil {
-		return nil, reply.Err
+		return nil, nil, reply.Err
 	}
-	if reply.Type == redis.NilReply {
-		return nil, nil
-	}
-	gobBytes, err := reply.Bytes()
+	list, err := reply.ListBytes()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	go redisStore.setTTLRoutine(client, uid, gobBytes)
-	return gobDecode(gobBytes)
+	if list[0] == nil || list[1] == nil {
+		return []byte{}, nil, nil
+	}
+	data := list[0]
+	gobInfoBytes := list[1]
+	gobInfo, err := gobInfoDecode(gobInfoBytes)
+	// Set TTL if no error
+	// TODO: Should I do this?
+	if err == nil {
+		go redisStore.setTTLRoutine(client, uid, data)
+	} else {
+		redisStore.Put(client)
+	}
+	return data, gobInfo, err
 }
+
+func (redisStore *RedisStore) GetGobLen(uid string) (int, error) {
+	client, err := redisStore.Get()
+	if err != nil {
+		return -1, err
+	}
+	defer redisStore.Put(client)
+	reply := client.Cmd("STRLEN", gobKey(uid))
+	if reply.Err != nil {
+		return -1, reply.Err
+	}
+	return reply.Int()
+
+}
+
 
 func (redisStore *RedisStore) DelGob(uid string) error {
 	key := gobKey(uid)
@@ -224,6 +278,7 @@ func (redisStore *RedisStore) DelUIDToUID(delUID string) (string, error) {
 	return uid, nil
 }
 
+// TODO: Verify uid's still exist?
 func (redisStore *RedisStore) GetHorde(hordeName string) (storage.Horde, error) {
 	client, err := redisStore.Get()
 	if err != nil {
@@ -309,6 +364,22 @@ func (redisStore *RedisStore) DelUIDHorde(uid string) error {
 	}
 	go redisStore.deleteExpireRoutine(client, uidToHordeKey(uid))
 	return nil
+}
+
+func (redisStore *RedisStore) CurrentUIDFIFO(fifoName string) (string, error) {
+	client, err := redisStore.Get()
+	if err != nil {
+		return "", err
+	}
+	reply := client.Cmd("LRANGE", fifoListKey(fifoName), -1, -1)
+	list, err := reply.List()
+	if err != nil {
+		return "", err
+	}
+	if len(list) > 0 {
+		return list[0], nil
+	}
+	return "", nil
 }
 
 func (redisStore *RedisStore) Configure(confStr string) {

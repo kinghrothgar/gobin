@@ -67,9 +67,12 @@ func main() {
 	mux.Get("/delete/:delUID", http.HandlerFunc(handler.DelGob))
 	mux.Get("/horde/:horde", http.HandlerFunc(handler.GetHorde))
 	mux.Get("/new/gob", http.HandlerFunc(handler.GetForm))
+	mux.Get("/fifo/:fifo", http.HandlerFunc(handler.GetFIFOGob))
 	mux.Post("/", http.HandlerFunc(handler.PostGob))
 	// TODO: Should I post to /horde/:horde
 	mux.Post("/:horde", http.HandlerFunc(handler.PostHordeGob))
+	mux.Post("/horde/:horde", http.HandlerFunc(handler.PostHordeGob))
+	mux.Post("/fifo/:fifo", http.HandlerFunc(handler.PostFIFOGob))
 
 	http.Handle("/", mux)
 

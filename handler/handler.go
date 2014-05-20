@@ -40,7 +40,7 @@ func validUID(uid string) bool {
 	return true
 }
 
-func validHordeName(hordeName string) bool {
+func validName(hordeName string) bool {
 	// TODO: horde max length?
 	if len(hordeName) > 50 || !alphaReg.MatchString(hordeName) {
 		return false
@@ -199,7 +199,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("HANDLER: GetHorde called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
-	if !validHordeName(hordeName) {
+	if !validName(hordeName) {
 		returnHTTPError(w, "GetHorde", hordeName+" not found", http.StatusNotFound)
 		return
 	}
@@ -254,7 +254,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("HANDLER: PostHordeGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
-	if !validHordeName(hordeName) {
+	if !validName(hordeName) {
 		returnHTTPError(w, "PostHordeGob", "horde name can only contain letters", http.StatusNotFound)
 		return
 	}
@@ -269,6 +269,33 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		gslog.Error("HANDLER: put horde gob failed with error: %s", err.Error())
 		returnHTTPError(w, "PostHordeGob", "failed to save gob", http.StatusInternalServerError)
+		return
+	}
+
+	pageType := getPageType(r)
+	pageBytes, err := templ.GetURLPage(getScheme(r), pageType, uid, delUID)
+	w.Write(pageBytes)
+}
+
+func PostFIFOGob(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("HANDLER: PostFIFOGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
+	params := r.URL.Query()
+	fifoName := params.Get(":fifo")
+	if !validName(fifoName) {
+		returnHTTPError(w, "PostFIFOGob", "fifo name can only contain letters", http.StatusNotFound)
+		return
+	}
+	gobData := getGobData(w, r)
+	if len(gobData) == 0 {
+		returnHTTPError(w, "PostFIFOGob", "gob empty", http.StatusBadRequest)
+		return
+	}
+	ip := getIpAddress(r)
+	uid, delUID, err := store.PutFIFOGob(hordeName, gobData, ip)
+	gslog.Debug("HANDLER: uid: %s, ip: %s", uid, ip)
+	if err != nil {
+		gslog.Error("HANDLER: put fifo gob failed with error: %s", err.Error())
+		returnHTTPError(w, "PostFIFOGob", "failed to save gob", http.StatusInternalServerError)
 		return
 	}
 

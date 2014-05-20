@@ -18,13 +18,17 @@ const (
 type DataStore interface {
 	UIDExist(string) (bool, error)
 	DelUIDExist(string) (bool, error)
-	PutGob(*storage.Gob) error
-	GetGob(string) (*storage.Gob, error)
+	PutGob([]byte, *storage.GobInfo) error
+	AppendGob(string, []byte) error
+	GetGob(string) ([]byte, *storage.GobInfo, error)
+	GetGobLen(string) (int, error)
 	DelGob(string) error
 	DelUIDToUID(string) (string, error)
 	GetHorde(string) (storage.Horde, error)
 	AddUIDHorde(string, string) error
 	DelUIDHorde(string) error
+	AddUIDFIFO(string, string) error
+	CurrentUIDFIFO(string) (string, error)
 	Configure(string)
 }
 
@@ -46,11 +50,11 @@ var (
 )
 
 func GetGob(uid string) ([]byte, string, error) {
-	gob, err := dataStore.GetGob(uid)
+	gob, gobInfo, err := dataStore.GetGob(uid)
 	if err != nil || gob == nil {
 		return []byte{}, "", err
 	}
-	return gob.Data, gob.Type, err
+	return gob.Data, gobInfo.Type, err
 }
 
 func PutGob(data []byte, ip string) (string, string, error) {
@@ -83,6 +87,39 @@ func PutHordeGob(hordeName string, data []byte, ip string) (string, string, erro
 		return uid, delUID, err
 	}
 	return uid, delUID, dataStore.AddUIDHorde(hordeName, uid)
+}
+
+func AppendGob(uid string, data []byte) error {
+	return nil
+}
+
+// TODO: looking up length of 
+func PutFIFOGob(fifoName string, data []byte, ip string) (error) {
+	newUIDFlag := false
+	uid, err := dataStore.CurrentUIDFIFO(fifoName)
+	if err != nil {
+		return err
+	}
+	if uid == "" {
+		uid = GetNewUID()
+		newUIDFlag = true
+	}
+	// TODO: Doing an extra redis hit when not need if already a new UID
+	if length, err := dataStore.GetGobLen(uid); err != nil {
+		return err
+	// If length + data is over 10MB, store in new gob
+	} else if (length + len(data)) > 10485760 {
+		uid = GetNewUID()
+		newUIDFlag = true
+	}
+
+	if err := AppendGob(uid, data); err != nil {
+		return err
+	}
+	if newUIDFlag {
+		return dataStore.AddUIDFIFO(fifoName, uid)
+	}
+	return nil
 }
 
 func DelUIDToUID(delUID string) (string, error) {
@@ -138,6 +175,7 @@ func GetNewDelUID() string {
 }
 
 // TODO: Need to error
+// TODO: Not thread safe
 func GetNewUID() string {
 	uid := randomString(uidLen)
 	if exist, _ := dataStore.UIDExist(uid); exist {
