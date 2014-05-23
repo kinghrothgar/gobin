@@ -9,6 +9,7 @@ goblin.conf
 
 # Vim swap
 .*.sw[opn]
+tags
 
 # Deploy script
 push_up.sh
