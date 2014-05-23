@@ -48,9 +48,9 @@ func main() {
 	}
 
 	storeType, storeConf := conf.GetStr("storetype"), conf.GetStr("storeconf")
-	uidLen, delUIDLen := conf.GetInt("uidlength"), conf.GetInt("deluidlength")
-	handler.Initialize(uidLen, delUIDLen)
-	if err := store.Initialize(storeType, storeConf, uidLen, delUIDLen); err != nil {
+	uidLen, tokenLen := conf.GetInt("uidlength"), conf.GetInt("tokenlength")
+	handler.Initialize(uidLen, tokenLen)
+	if err := store.Initialize(storeType, storeConf, uidLen, tokenLen); err != nil {
 		gslog.Fatal("MAIN: failed to initialize storage with error: %s", err.Error())
 	}
 	htmlTemps, textTemps := conf.GetStr("htmltemplates"), conf.GetStr("texttemplates")
@@ -64,7 +64,8 @@ func main() {
 	mux := pat.New()
 	mux.Get("/", http.HandlerFunc(handler.GetRoot))
 	mux.Get("/:uid", http.HandlerFunc(handler.GetGob))
-	mux.Get("/delete/:delUID", http.HandlerFunc(handler.DelGob))
+	mux.Get("/delete/:token", http.HandlerFunc(handler.DelGob))
+	mux.Post("/append/:token", http.HandlerFunc(handler.AppendGob))
 	mux.Get("/horde/:horde", http.HandlerFunc(handler.GetHorde))
 	mux.Get("/new/gob", http.HandlerFunc(handler.GetForm))
 	mux.Post("/", http.HandlerFunc(handler.PostGob))
@@ -130,9 +131,9 @@ func main() {
 			}
 
 			storeConf = conf.GetStr("storeconf")
-			uidLen, delUIDLen = conf.GetInt("uidlength"), conf.GetInt("deluidlength")
-			handler.Initialize(uidLen, delUIDLen)
-			store.Configure(storeConf, uidLen, delUIDLen)
+			uidLen, tokenLen = conf.GetInt("uidlength"), conf.GetInt("tokenlength")
+			handler.Initialize(uidLen, tokenLen)
+			store.Configure(storeConf, uidLen, tokenLen)
 
 			htmlTemps, textTemps = conf.GetStr("htmltemplates"), conf.GetStr("texttemplates")
 			domain = conf.GetStr("domain")

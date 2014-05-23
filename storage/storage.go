@@ -4,13 +4,18 @@ import (
 	"time"
 )
 
-type Gob struct {
-	UID     string
-	DelUID  string
-	Type    string
-	Data    []byte
-	Created time.Time
-	IP      string
+const (
+	GOB_INFO_VERSION int = 1
+)
+
+type GobInfo struct {
+	UID      string
+	Token    string
+	Type     string
+	Created  time.Time
+	Modified time.Time
+	IP       string
+	Version  int
 }
 
 // A data structure to hold a key/value pair.

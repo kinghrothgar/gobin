@@ -17,11 +17,13 @@ const (
 
 type DataStore interface {
 	UIDExist(string) (bool, error)
-	DelUIDExist(string) (bool, error)
-	PutGob(*storage.Gob) error
-	GetGob(string) (*storage.Gob, error)
+	TokenExist(string) (bool, error)
+	PutGob([]byte, *storage.GobInfo) error
+	AppendGob(string, []byte) error
+	GetGob(string) ([]byte, *storage.GobInfo, error)
+	GetGobLen(string) (int, error)
 	DelGob(string) error
-	DelUIDToUID(string) (string, error)
+	TokenToUID(string) (string, error)
 	GetHorde(string) (storage.Horde, error)
 	AddUIDHorde(string, string) error
 	DelUIDHorde(string) error
@@ -30,8 +32,8 @@ type DataStore interface {
 
 type FileStore interface {
 	UIDExist(string) (bool, error)
-	PutGob(*storage.Gob) error
-	GetGob(string) (*storage.Gob, error)
+	PutGob(*storage.GobInfo) error
+	GetGob(string) (*storage.GobInfo, error)
 	DelGob(string) error
 	GetHorde(string) (storage.Horde, error)
 	AddToHorde(string, string) error
@@ -42,29 +44,35 @@ type FileStore interface {
 var (
 	dataStore DataStore
 	uidLen    int
-	delUIDLen int
+	tokenLen  int
 )
 
 func GetGob(uid string) ([]byte, string, error) {
-	gob, err := dataStore.GetGob(uid)
+	gob, gobInfo, err := dataStore.GetGob(uid)
 	if err != nil || gob == nil {
 		return []byte{}, "", err
 	}
-	return gob.Data, gob.Type, err
+	return gob, gobInfo.Type, err
 }
 
 func PutGob(data []byte, ip string) (string, string, error) {
 	uid := GetNewUID()
-	delUID := GetNewDelUID()
-	gob := &storage.Gob{
-		UID:     uid,
-		DelUID:  delUID,
-		Data:    data,
-		IP:      ip,
-		Created: time.Now(),
+	token := GetNewToken()
+	t := time.Now()
+	gobInfo := &storage.GobInfo{
+		UID:      uid,
+		Token:    token,
+		IP:       ip,
+		Created:  t,
+		Modified: t,
+		Version:  storage.GOB_INFO_VERSION,
 	}
-	err := dataStore.PutGob(gob)
-	return uid, delUID, err
+	err := dataStore.PutGob(data, gobInfo)
+	return uid, token, err
+}
+
+func AppendGob(uid string, data []byte) error {
+	return AppendGob(uid, data)
 }
 
 // Should I return a Horde or just a map?
@@ -85,8 +93,8 @@ func PutHordeGob(hordeName string, data []byte, ip string) (string, string, erro
 	return uid, delUID, dataStore.AddUIDHorde(hordeName, uid)
 }
 
-func DelUIDToUID(delUID string) (string, error) {
-	return dataStore.DelUIDToUID(delUID)
+func TokenToUID(token string) (string, error) {
+	return dataStore.TokenToUID(token)
 }
 
 func DelGob(uid string) error {
@@ -96,9 +104,9 @@ func DelGob(uid string) error {
 	return dataStore.DelUIDHorde(uid)
 }
 
-func Initialize(storeType string, confStr string, uidLength int, delUIDLength int) error {
+func Initialize(storeType string, confStr string, uidLength int, tokenLength int) error {
 	uidLen = uidLength
-	delUIDLen = delUIDLength
+	tokenLen = tokenLength
 	switch strings.ToUpper(storeType) {
 	//case "MEMORY":
 	//	dataStore = memory.New(confStr)
@@ -107,17 +115,17 @@ func Initialize(storeType string, confStr string, uidLength int, delUIDLength in
 		dataStore = redis.New(confStr)
 		return nil
 	default:
-		gslog.Debug("STORE: initialized with store type: %s, conf string: %s, uid length: %d, del uid length: %d", storeType, confStr, uidLen, delUIDLen)
+		gslog.Debug("STORE: initialized with store type: %s, conf string: %s, uid length: %d, token length: %d", storeType, confStr, uidLen, tokenLen)
 	}
 	return errors.New("invalid store type")
 }
 
-func Configure(confStr string, uidLength int, delUIDLength int) {
+func Configure(confStr string, uidLength int, tokenLength int) {
 	// TODO: Are these thread safe?
 	uidLen = uidLength
-	delUIDLen = delUIDLength
+	tokenLen = tokenLength
 	dataStore.Configure(confStr)
-	gslog.Debug("STORE: configured with conf string: %s, uid length: %d, del uid length: %d", confStr, uidLen, delUIDLen)
+	gslog.Debug("STORE: configured with conf string: %s, uid length: %d, token length: %d", confStr, uidLen, tokenLen)
 }
 
 func randomString(length int) string {
@@ -129,15 +137,16 @@ func randomString(length int) string {
 	return string(bytes)
 }
 
-func GetNewDelUID() string {
-	delUID := randomString(delUIDLen)
-	if exist, _ := dataStore.DelUIDExist(delUID); exist {
-		return GetNewDelUID()
+func GetNewToken() string {
+	token := randomString(tokenLen)
+	if exist, _ := dataStore.TokenExist(token); exist {
+		return GetNewToken()
 	}
-	return delUID
+	return token
 }
 
 // TODO: Need to error
+// TODO: Not thread safe
 func GetNewUID() string {
 	uid := randomString(uidLen)
 	if exist, _ := dataStore.UIDExist(uid); exist {

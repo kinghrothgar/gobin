@@ -15,7 +15,7 @@ var (
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
 	textContentTypeReg  = regexp.MustCompile("^text/")
 	uidLen              int
-	delUIDLen           int
+	tokenLen            int
 )
 
 func getGobData(w http.ResponseWriter, r *http.Request) []byte {
@@ -24,9 +24,9 @@ func getGobData(w http.ResponseWriter, r *http.Request) []byte {
 	return []byte(str)
 }
 
-func validDelUID(delUID string) bool {
+func validToken(token string) bool {
 	// prevents a lookup if it's obviously crap
-	if len(delUID) > delUIDLen || !alphaReg.MatchString(delUID) {
+	if len(token) > tokenLen || !alphaReg.MatchString(token) {
 		return false
 	}
 	return true
@@ -126,10 +126,10 @@ func getLanguage(r *http.Request) string {
 
 // Must be called before any other functions are called
 // TODO: should I just called it SetUIDLen ?
-func Initialize(uidLength int, delUIDLength int) {
+func Initialize(uidLength int, tokenLength int) {
 	uidLen = uidLength
-	delUIDLen = delUIDLength
-	gslog.Debug("HANDLER: initialized with uid length: %d, del uid length: %d", uidLen, delUIDLen)
+	tokenLen = tokenLength
+	gslog.Debug("HANDLER: initialized with uid length: %d, token length: %d", uidLen, tokenLen)
 }
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
@@ -216,7 +216,7 @@ func GetHorde(w http.ResponseWriter, r *http.Request) {
 	pageType := getPageType(r)
 	pageBytes, err := templ.GetHordePage(getScheme(r), pageType, hordeName, horde)
 	if err != nil {
-		gslog.Debug("HANDLER: failed to get horde with error: %s", err.Error())
+		gslog.Error("HANDLER: failed to get horde with error: %s", err.Error())
 		returnHTTPError(w, "GetHorde", "failed to get horde", http.StatusInternalServerError)
 		return
 	}
@@ -232,8 +232,8 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ip := getIpAddress(r)
-	uid, delUID, err := store.PutGob(gobData, ip)
-	gslog.Debug("HANDLER: uid: %s, ip: %s", uid, ip)
+	uid, token, err := store.PutGob(gobData, ip)
+	gslog.Debug("HANDLER: PostGob uid: %s, ip: %s, token: %s", uid, ip, token)
 	if err != nil {
 		gslog.Error("HANDLER: post gob failed with error: %s", err.Error())
 		returnHTTPError(w, "PostGob", "failed to save gob", http.StatusInternalServerError)
@@ -241,12 +241,50 @@ func PostGob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageType := getPageType(r)
-	pageBytes, err := templ.GetURLPage(getScheme(r), pageType, uid, delUID)
+	pageBytes, err := templ.GetURLPage(getScheme(r), pageType, uid, token)
 	if err != nil {
-		gslog.Debug("HANDLER: post gob failed with error: %s", err.Error())
+		gslog.Error("HANDLER: post gob failed with error: %s", err.Error())
 		returnHTTPError(w, "GetHorde", "failed to save gob", http.StatusInternalServerError)
 		return
 	}
+	w.Write(pageBytes)
+}
+
+func AppendGob(w http.ResponseWriter, r *http.Request) {
+	gslog.Debug("HANDLER: AppendGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
+	params := r.URL.Query()
+	token := params.Get(":token")
+	if !validToken(token) {
+		returnHTTPError(w, "AppendGob", token+" not found", http.StatusNotFound)
+		return
+	}
+	gobData := getGobData(w, r)
+	if len(gobData) == 0 {
+		returnHTTPError(w, "AppendGob", "gob empty", http.StatusBadRequest)
+		return
+	}
+	ip := getIpAddress(r)
+	uid, err := store.TokenToUID(token)
+	gslog.Debug("HANDLER: AppendGob uid: %s, ip: %s, token: %s", uid, ip, token)
+	if err != nil {
+		gslog.Error("HANDLER: append gob failed with error: %s", err.Error())
+		returnHTTPError(w, "AppendGob", "failed to append gob", http.StatusInternalServerError)
+		return
+	}
+	if uid == "" {
+		returnHTTPError(w, "AppendGob", token+" not found", http.StatusNotFound)
+		return
+	}
+	err = store.AppendGob(uid, gobData)
+	if err != nil {
+		gslog.Error("HANDLER: append gob failed with error: %s", err.Error())
+		returnHTTPError(w, "AppendGob", "failed to append gob", http.StatusInternalServerError)
+		return
+	}
+
+	pageType := getPageType(r)
+	// TODO: Should I tell them what gob they appended? Maybe a security flaw
+	pageBytes, err := templ.GetMessPage(pageType, "successfully appended " + uid)
 	w.Write(pageBytes)
 }
 
@@ -264,7 +302,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ip := getIpAddress(r)
-	uid, delUID, err := store.PutHordeGob(hordeName, gobData, ip)
+	uid, token, err := store.PutHordeGob(hordeName, gobData, ip)
 	gslog.Debug("HANDLER: uid: %s, ip: %s", uid, ip)
 	if err != nil {
 		gslog.Error("HANDLER: put horde gob failed with error: %s", err.Error())
@@ -273,26 +311,26 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageType := getPageType(r)
-	pageBytes, err := templ.GetURLPage(getScheme(r), pageType, uid, delUID)
+	pageBytes, err := templ.GetURLPage(getScheme(r), pageType, uid, token)
 	w.Write(pageBytes)
 }
 
 func DelGob(w http.ResponseWriter, r *http.Request) {
 	gslog.Debug("HANDLER: DelGob called with header: %+v, host: %s, requestURI: %s, remoteAddr: %s", r.Header, r.Host, r.RequestURI, r.RemoteAddr)
 	params := r.URL.Query()
-	delUID := params.Get(":delUID")
-	if !validDelUID(delUID) {
-		returnHTTPError(w, "DelGob", delUID+" not found", http.StatusNotFound)
+	token := params.Get(":token")
+	if !validToken(token) {
+		returnHTTPError(w, "DelGob", token+" not found", http.StatusNotFound)
 		return
 	}
-	uid, err := store.DelUIDToUID(delUID)
+	uid, err := store.TokenToUID(token)
 	if err != nil {
 		gslog.Error("HANDLER: delete gob failed with error: %s", err.Error())
 		returnHTTPError(w, "DelGob", "failed to delete gob", http.StatusInternalServerError)
 		return
 	}
 	if uid == "" {
-		returnHTTPError(w, "DelGob", delUID+" not found", http.StatusNotFound)
+		returnHTTPError(w, "DelGob", token+" not found", http.StatusNotFound)
 		return
 	}
 	err = store.DelGob(uid)
