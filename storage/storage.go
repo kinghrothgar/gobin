@@ -9,13 +9,12 @@ const (
 )
 
 type GobInfo struct {
-	UID      string
-	Token    string
-	Type     string
-	Created  time.Time
-	Modified time.Time
-	IP       string
-	Version  int
+	UID     string
+	Token   string
+	Type    string
+	Created time.Time
+	IP      string
+	Version int
 }
 
 // A data structure to hold a key/value pair.

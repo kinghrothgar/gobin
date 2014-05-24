@@ -11,13 +11,13 @@ import (
 )
 
 const (
-	MB      int = 1048576
-	DAY     int = 86400
-	WEEK        = 7 * DAY
-	YEAR        = 365 * DAY
+	MB   int = 1048576
+	DAY  int = 86400
+	WEEK     = 7 * DAY
+	YEAR     = 365 * DAY
 	// TODO: Make these configurable
-	DEL_TTL     = WEEK
-	MAX_LEN		= 10485760 // 10 MB
+	DEL_TTL = WEEK
+	MAX_LEN = 10485760 // 10 MB
 )
 
 type RedisStore struct {
@@ -141,7 +141,6 @@ func (redisStore *RedisStore) deleteExpireRoutine(client *pool.Client, key strin
 	redisStore.Put(client)
 }
 
-
 func (redisStore *RedisStore) keyExist(key string) (bool, error) {
 	client, err := redisStore.Get()
 	if err != nil {
@@ -206,13 +205,14 @@ func (redisStore *RedisStore) AppendGob(uid string, data []byte) error {
 	}
 	length += len(data)
 	if length > MAX_LEN {
+		gslog.Debug("REDIS: gob length %d MAX_LEN %d")
 		reply := client.Cmd("GET", gobKey(uid))
 		if reply.Err != nil {
 			return reply.Err
 		}
 		oldData, _ := reply.Bytes()
 		// TODO: Best way to do this?
-		data = bytes.Join([][]byte{oldData[length - MAX_LEN:len(oldData)], data}, []byte{})
+		data = bytes.Join([][]byte{oldData[length-MAX_LEN : len(oldData)], data}, []byte{})
 		if reply := client.Cmd("SET", gobKey(uid), data); reply.Err != nil {
 			return reply.Err
 		}
@@ -316,7 +316,7 @@ func (redisStore *RedisStore) GetHorde(hordeName string) (storage.Horde, error) 
 	horde := make(storage.Horde, length)
 	for i, uid := range hordeList {
 		uidCreated := &storage.UIDCreated{
-			UID: hordeList[i],
+			UID:     hordeList[i],
 			Created: hordeHash[uid],
 		}
 		horde[i] = uidCreated

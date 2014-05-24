@@ -3,8 +3,8 @@ package store
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/kinghrothgar/goblin/storage"
 	"github.com/grooveshark/golib/gslog"
+	"github.com/kinghrothgar/goblin/storage"
 	//"github.com/kinghrothgar/goblin/storage/memory"
 	"github.com/kinghrothgar/goblin/storage/redis"
 	"strings"
@@ -60,19 +60,18 @@ func PutGob(data []byte, ip string) (string, string, error) {
 	token := GetNewToken()
 	t := time.Now()
 	gobInfo := &storage.GobInfo{
-		UID:      uid,
-		Token:    token,
-		IP:       ip,
-		Created:  t,
-		Modified: t,
-		Version:  storage.GOB_INFO_VERSION,
+		UID:     uid,
+		Token:   token,
+		IP:      ip,
+		Created: t,
+		Version: storage.GOB_INFO_VERSION,
 	}
 	err := dataStore.PutGob(data, gobInfo)
 	return uid, token, err
 }
 
 func AppendGob(uid string, data []byte) error {
-	return AppendGob(uid, data)
+	return dataStore.AppendGob(uid, data)
 }
 
 // Should I return a Horde or just a map?
