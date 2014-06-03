@@ -3,10 +3,10 @@ package redis
 import (
 	"bytes"
 	realgob "encoding/gob"
+	"github.com/fzzy/radix/redis"
 	"github.com/grooveshark/golib/gslog"
 	"github.com/kinghrothgar/goblin/storage"
 	"github.com/kinghrothgar/redis/pool"
-	"github.com/mediocregopher/radix/redis"
 	"time"
 )
 

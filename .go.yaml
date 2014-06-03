@@ -23,10 +23,10 @@ deps:
     ref: tip
     path: bitbucket.org/kardianos/osext
 
-  - loc: https://github.com/mediocregopher/radix.git
+  - loc: https://github.com/fzzy/radix.git
     type: git
-    ref: byteslice-fix
-    path: github.com/mediocregopher/radix
+    ref: master
+    path: github.com/fzzy/radix
 
   - loc: https://github.com/kinghrothgar/redis.git
     type: git
