@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/kardianos/osext"
 	//"github.com/grooveshark/golib/gslog"
 	"github.com/mediocregopher/flagconfig"
+	"os"
 	"path/filepath"
 	"sync"
 )
@@ -15,14 +16,16 @@ var (
 )
 
 func Parse() error {
+	// Change working dir to that of the executable
 	exeFolder, _ := osext.ExecutableFolder()
+	os.Chdir(exeFolder)
 
 	f := flagconfig.New("goblin")
 	f.StrParam("loglevel", "logging level (DEBUG, INFO, WARN, ERROR, FATAL)", "DEBUG")
 	f.StrParam("logfile", "path to log file", "")
-	f.StrParam("htmltemplates", "path to html templates file", filepath.Join(exeFolder, "templates/htmlTemplates.tmpl"))
-	f.StrParam("texttemplates", "path to text templates file", filepath.Join(exeFolder, "templates/textTemplates.tmpl"))
-	f.StrParam("staticpath", "path to static files folder", filepath.Join(exeFolder, "static"))
+	f.StrParam("htmltemplates", "path to html templates file", filepath.Join("templates", "htmlTemplates.tmpl"))
+	f.StrParam("texttemplates", "path to text templates file", filepath.Join("templates", "textTemplates.tmpl"))
+	f.StrParam("staticpath", "path to static files folder", "static")
 	f.IntParam("uidlength", "length of gob uid string", 4)
 	f.IntParam("tokenlength", "length of the secure token string", 15)
 	f.RequiredStrParam("storetype", "the data store to use")
