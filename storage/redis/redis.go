@@ -71,7 +71,11 @@ func calculateTTL(gobBytes []byte) int {
 	if sizeMB < 1 {
 		return YEAR
 	}
-	return (-20*sizeMB + 207) * DAY
+	days := -20*sizeMB + 207
+	if days < 7 {
+		days = 7
+	}
+	return days * DAY
 }
 
 // gobDecode decodes a byte array into a storage gob
@@ -199,13 +203,13 @@ func (redisStore *RedisStore) AppendGob(uid string, data []byte) error {
 		return err
 	}
 	// Append or set depending on if length of old + new data > MAX_LEN
-	length, err := getStrLen(client, uid)
+	length, err := getStrLen(client, gobKey(uid))
 	if err != nil {
 		return err
 	}
 	length += len(data)
 	if length > MAX_LEN {
-		gslog.Debug("REDIS: gob length %d MAX_LEN %d")
+		gslog.Debug("REDIS: tuncating gob length %d MAX_LEN %d", length, MAX_LEN)
 		reply := client.Cmd("GET", gobKey(uid))
 		if reply.Err != nil {
 			return reply.Err
@@ -217,6 +221,7 @@ func (redisStore *RedisStore) AppendGob(uid string, data []byte) error {
 			return reply.Err
 		}
 	} else {
+		gslog.Debug("REDIS: appending gob length %d MAX_LEN %d", length, MAX_LEN)
 		if reply := client.Cmd("APPEND", gobKey(uid), data); reply.Err != nil {
 			return reply.Err
 		}
@@ -239,7 +244,7 @@ func (redisStore *RedisStore) GetGob(uid string) ([]byte, *storage.GobInfo, erro
 		return nil, nil, err
 	}
 	if list[0] == nil || list[1] == nil {
-		return []byte{}, nil, nil
+		return nil, nil, nil
 	}
 	data := list[0]
 	gobInfoBytes := list[1]
