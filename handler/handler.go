@@ -79,9 +79,12 @@ func getIpAddress(r *http.Request) string {
 	return net.ParseIP(hdrRealIp).String()
 }
 
-func getScheme(r *http.Request) string {
+func getScheme(r *http.Request) (scheme string) {
 	hdr := r.Header
-	return hdr.Get("X-Real-Scheme")
+	if scheme = hdr.Get("X-Real-Scheme"); scheme == "" {
+		scheme = "http"
+	}
+	return
 }
 
 func getPageType(r *http.Request) string {
@@ -284,7 +287,7 @@ func AppendGob(w http.ResponseWriter, r *http.Request) {
 
 	pageType := getPageType(r)
 	// TODO: Should I tell them what gob they appended? Maybe a security flaw
-	pageBytes, err := templ.GetMessPage(pageType, "successfully appended " + uid)
+	pageBytes, err := templ.GetMessPage(pageType, "successfully appended "+uid)
 	w.Write(pageBytes)
 }
 
@@ -341,6 +344,6 @@ func DelGob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageType := getPageType(r)
-	pageBytes, err := templ.GetMessPage(pageType, "successfully deleted " + uid)
+	pageBytes, err := templ.GetMessPage(pageType, "successfully deleted "+uid)
 	w.Write(pageBytes)
 }
