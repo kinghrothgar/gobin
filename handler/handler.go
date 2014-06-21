@@ -7,11 +7,17 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
+)
+
+const (
+	HORDE_MAX_LEN = 50
 )
 
 var (
 	alphaReg            = regexp.MustCompile("^[A-Za-z]+$")
+	alphaNumericReg     = regexp.MustCompile("^[A-Za-z0-9]+$")
 	browserUserAgentReg = regexp.MustCompile("Mozilla")
 	textContentTypeReg  = regexp.MustCompile("^text/")
 	uidLen              int
@@ -42,7 +48,7 @@ func validUID(uid string) bool {
 
 func validHordeName(hordeName string) bool {
 	// TODO: horde max length?
-	if len(hordeName) > 50 || !alphaReg.MatchString(hordeName) {
+	if len(hordeName) > HORDE_MAX_LEN || !alphaNumericReg.MatchString(hordeName) {
 		return false
 	}
 	return true
@@ -296,7 +302,7 @@ func PostHordeGob(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	hordeName := params.Get(":horde")
 	if !validHordeName(hordeName) {
-		returnHTTPError(w, "PostHordeGob", "horde name can only contain letters", http.StatusNotFound)
+		returnHTTPError(w, "PostHordeGob", "horde name can only contain up to "+strconv.Itoa(HORDE_MAX_LEN)+" alphanumeric characters", http.StatusNotFound)
 		return
 	}
 	gobData := getGobData(w, r)
