@@ -4,8 +4,8 @@
 *.so
 
 # Compiled program and configs
-goblin
-goblin.conf
+gobin
+gobin.conf
 
 # Vim swap
 .*.sw[opn]
@@ -20,9 +20,6 @@ _test
 
 # Goat lib folder
 .goat
-
-# Prism folder
-static/prism
 
 # Architecture specific extensions/prefixes
 *.[568vq]

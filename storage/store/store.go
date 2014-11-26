@@ -4,9 +4,9 @@ import (
 	"crypto/rand"
 	"errors"
 	"github.com/grooveshark/golib/gslog"
-	"github.com/kinghrothgar/goblin/storage"
-	//"github.com/kinghrothgar/goblin/storage/memory"
-	"github.com/kinghrothgar/goblin/storage/redis"
+	"github.com/kinghrothgar/gobin/storage"
+	//"github.com/kinghrothgar/gobin/storage/memory"
+	"github.com/kinghrothgar/gobin/storage/redis"
 	"strings"
 	"time"
 )

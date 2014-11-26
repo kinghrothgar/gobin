@@ -3,7 +3,7 @@ package memory
 import (
 	"errors"
 	"github.com/grooveshark/golib/gslog"
-	"github.com/kinghrothgar/goblin/storage"
+	"github.com/kinghrothgar/gobin/storage"
 	"sync"
 	"time"
 )

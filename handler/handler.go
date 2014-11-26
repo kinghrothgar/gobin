@@ -2,8 +2,8 @@ package handler
 
 import (
 	"github.com/grooveshark/golib/gslog"
-	"github.com/kinghrothgar/goblin/storage/store"
-	"github.com/kinghrothgar/goblin/templ"
+	"github.com/kinghrothgar/gobin/storage/store"
+	"github.com/kinghrothgar/gobin/templ"
 	"net"
 	"net/http"
 	"regexp"

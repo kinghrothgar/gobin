@@ -1,4 +1,4 @@
-# goblin
+# gobin
 
 > A pastebin web application focused at CLI support (sprunge inspired)
 
@@ -9,7 +9,7 @@
 #### Install Required Packages
 
 ```bash
-$ go get github.com/kinghrothgar/goblin github.com/bmizerany/pat github.com/grooveshark/golib/gslog bitbucket.org/kardianos/osext github.com/mediocregopher/flagconfig github.com/kinghrothgar/redis/pool github.com/mediocregopher/radix/redis github.com/kinghrothgar/pygments github.com/kinghrothgar/goblin
+$ go get github.com/kinghrothgar/gobin github.com/bmizerany/pat github.com/grooveshark/golib/gslog bitbucket.org/kardianos/osext github.com/mediocregopher/flagconfig github.com/kinghrothgar/redis/pool github.com/mediocregopher/radix/redis github.com/kinghrothgar/pygments github.com/kinghrothgar/gobin
 ```
 
 #### Install Redis
@@ -28,7 +28,7 @@ Note: depending on your configuration, pygments may install at `/usr/bin/pygment
 ## Configuration
 
 ```bash
-$ go run goblin.go --example > goblin.conf
+$ go run gobin.go --example > gobin.conf
 ```
 
 
@@ -41,16 +41,16 @@ $ go run goblin.go --example > goblin.conf
 $ redis-server --port 6666
 ```
 
-#### Run goblin
+#### Run gobin
 
 ```bash
-$ go run goblin.go --conf=goblin.conf
+$ go run gobin.go --conf=gobin.conf
 ```
 
 or without a conf file
 
 ```bash
-$ go run goblin.go --storetype=redis --storeconf=0.0.0.0:6666 --domain=0.0.0.0 --pygmentizepath=/usr/bin/pygmentize --listen=0.0.0.0:3000 --htmltemplates=/home/vagrant/code/goblin/templates/htmlTemplates.tmpl --texttemplates=/home/vagrant/code/goblin/templates/textTemplates.tmpl --staticpath=/home/vagrant/code/goblin/static
+$ go run gobin.go --storetype=redis --storeconf=0.0.0.0:6666 --domain=0.0.0.0 --pygmentizepath=/usr/bin/pygmentize --listen=0.0.0.0:3000 --htmltemplates=/home/vagrant/code/gobin/templates/htmlTemplates.tmpl --texttemplates=/home/vagrant/code/gobin/templates/textTemplates.tmpl --staticpath=/home/vagrant/code/gobin/static
 ```
 
 

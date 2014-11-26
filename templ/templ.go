@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/grooveshark/golib/gslog"
-	"github.com/kinghrothgar/goblin/storage"
+	"github.com/kinghrothgar/gobin/storage"
 	"github.com/kinghrothgar/pygments"
 	htmlTemplate "html/template"
 	textTemplate "text/template"
@@ -13,7 +13,7 @@ import (
 type Tabs struct {
 	Home bool
 	Form bool
-	Top bool
+	Top  bool
 }
 
 type HordePage struct {
@@ -30,8 +30,8 @@ type HomePage struct {
 }
 
 type MessPage struct {
-	Title  string
-	Tabs   *Tabs
+	Title   string
+	Tabs    *Tabs
 	Message string
 }
 
@@ -64,9 +64,9 @@ type MDPage struct {
 }
 
 var (
-	htmlTemplates *htmlTemplate.Template
-	textTemplates *textTemplate.Template
-	domain        string
+	htmlTemplates  *htmlTemplate.Template
+	textTemplates  *textTemplate.Template
+	domain         string
 	pygmentizePath string
 )
 
@@ -138,12 +138,12 @@ func GetGobPage(language string, data []byte) ([]byte, error) {
 	}
 	pygments.Binary(pygmentizePath)
 	opts := pygments.Options{
-		"linenos": "table",
+		"linenos":  "table",
 		"encoding": "utf-8",
 	}
 	code, err := pygments.Highlight(string(data), language, "html", opts)
 	if err != nil {
-		gslog.Error("Failed to highlight code: "+err.Error())
+		gslog.Error("Failed to highlight code: " + err.Error())
 		// Syntax highlighting has failed, so just display the raw data
 		return data, nil
 	}
@@ -177,7 +177,7 @@ func GetURLPage(scheme, contentType, uid, delUID string) ([]byte, error) {
 		Title:  "gobin: a cli pastebin",
 		UID:    uid,
 		DelUID: delUID,
-		Tabs:	t,
+		Tabs:   t,
 	}
 	return executeTemplate(contentType, "urlPage", p)
 }

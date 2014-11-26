@@ -5,7 +5,7 @@ import (
 	realgob "encoding/gob"
 	"github.com/fzzy/radix/redis"
 	"github.com/grooveshark/golib/gslog"
-	"github.com/kinghrothgar/goblin/storage"
+	"github.com/kinghrothgar/gobin/storage"
 	"github.com/kinghrothgar/redis/pool"
 	"time"
 )

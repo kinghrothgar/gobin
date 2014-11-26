@@ -20,7 +20,7 @@ func Parse() error {
 	exeFolder, _ := osext.ExecutableFolder()
 	os.Chdir(exeFolder)
 
-	f := flagconfig.New("goblin")
+	f := flagconfig.New("gobin")
 	f.StrParam("loglevel", "logging level (DEBUG, INFO, WARN, ERROR, FATAL)", "DEBUG")
 	f.StrParam("logfile", "path to log file", "")
 	f.StrParam("htmltemplates", "path to html templates file", filepath.Join("templates", "htmlTemplates.tmpl"))
