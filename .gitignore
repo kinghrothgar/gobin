@@ -6,6 +6,8 @@
 # Compiled program and configs
 gobin
 gobin.conf
+/rel
+/bin
 
 # Vim swap
 .*.sw[opn]

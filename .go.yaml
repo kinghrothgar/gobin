@@ -1,5 +1,5 @@
 ---
-path: github.com/kinghrothgar/goblin
+path: github.com/kinghrothgar/gobin
 deps:
   - loc: launchpad.net/goyaml
 
