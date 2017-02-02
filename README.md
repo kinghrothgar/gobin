@@ -14,7 +14,7 @@ $ go get github.com/kinghrothgar/gobin github.com/bmizerany/pat github.com/groov
 
 #### Install Redis
 
-Check out http://redis.io/download
+Check out https://redis.io/download
 
 
 #### Install Pygments (Optional)
