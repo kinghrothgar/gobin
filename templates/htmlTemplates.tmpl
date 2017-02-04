@@ -58,14 +58,14 @@ NAME
 
 SYNOPSIS
     Normal Upload:
-      &lt;command&gt; | curl -F 'gob=&lt;-' http://{{.Domain}}
+      &lt;command&gt; | curl -F 'gob=&lt;-' https://{{.Domain}}
     Horde Upload:
-      &lt;command&gt; | curl -F 'gob=&lt;-' http://{{.Domain}}/&lt;horde&gt;
+      &lt;command&gt; | curl -F 'gob=&lt;-' https://{{.Domain}}/&lt;horde&gt;
 
 DESCRIPTION
     Uploads output of &lt;command&gt; to {{.Domain}} or {{.Domain}}/&lt;horde&gt; and returns
     link to the gob.  All gobs pasted to a horde (a group of gobs or gobins)
-    can be seen by going to http://{{.Domain}}/horde/&lt;horde&gt;.
+    can be seen by going to https://{{.Domain}}/horde/&lt;horde&gt;.
 
     Add ?<lang> to resulting url for line numbers and syntax highlighting.  All
     <a href="/static/lexers.txt">lexers</a> for Pygments version 1.6 are valid.  Github style markdown is
@@ -77,21 +77,21 @@ DESCRIPTION
 
 EXAMPLES
     Normal Upload:
-    ~$ echo "Gobin is awesome" | curl -F 'gob=&lt;-' http://{{.Domain}}
-       http://{{.Domain}}/VZiY
-    ~$ firefox http://{{.Domain}}/VZiY
+    ~$ echo "Gobin is awesome" | curl -F 'gob=&lt;-' https://{{.Domain}}
+       https://{{.Domain}}/VZiY
+    ~$ firefox https://{{.Domain}}/VZiY
 
     Syntax Highlighting:
-    ~$ firefox http://{{.Domain}}/VZiY?go
+    ~$ firefox https://{{.Domain}}/VZiY?go
 
     Horde Upload:
-    ~$ cat hatersgonnahate.gif | curl -F 'gob=&lt;-' http://{{.Domain}}/gifs
-       http://{{.Domain}}/VZiY
-    ~$ firefox http://{{.Domain}}/horde/gifs
+    ~$ cat hatersgonnahate.gif | curl -F 'gob=&lt;-' https://{{.Domain}}/gifs
+       https://{{.Domain}}/VZiY
+    ~$ firefox https://{{.Domain}}/horde/gifs
 
 SEE ALSO
-    <a href="http://github.com/kinghrothgar/gobin">http://github.com/kinghrothgar/gobin</a>
-    <a href="http://github.com/kinghrothgar/gobin-scripts">http://github.com/kinghrothgar/gobin-scripts</a>
+    <a href="https://github.com/kinghrothgar/gobin">https://github.com/kinghrothgar/gobin</a>
+    <a href="https://github.com/kinghrothgar/gobin-scripts">https://github.com/kinghrothgar/gobin-scripts</a>
     <form action="/new/gob"><input type="submit" value="Upload Form"></form>
 </span>
 </div>
