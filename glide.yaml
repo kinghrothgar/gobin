@@ -1,0 +1,16 @@
+package: github.com/kinghrothgar/gobin
+import:
+# Not a direct dep, but glide gets a broken version if this isn't defined
+- package: golang.org/x/oauth2
+  vcs: git
+  verson: 9f3314589c9a9136388751d9adae6b0ed400978a
+  repo: git@github.com:golang/oauth2.git
+- package: cloud.google.com/go
+  version: v0.37.4
+- package: github.com/DataDog/zstd
+  version: v1.4.0
+- package: github.com/jmoiron/sqlx
+  version: v1.2.0
+- package: github.com/lib/pq
+  version: v1.1.0
+- package: golang.org/x/crypto

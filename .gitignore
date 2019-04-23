@@ -4,7 +4,7 @@
 *.so
 
 # Compiled program and configs
-gobin
+/gobin
 gobin.conf
 /rel
 /bin
