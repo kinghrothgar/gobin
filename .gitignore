@@ -3,11 +3,14 @@
 *.a
 *.so
 
-# Compiled program and configs
+# Compiled program, configs, dev files
 /gobin
 gobin.conf
 /rel
 /bin
+/test_files
+/service-account.json
+
 
 # Vim swap
 .*.sw[opn]
@@ -20,8 +23,8 @@ push_up.sh
 _obj
 _test
 
-# Goat lib folder
-.goat
+# Golang Vendor
+/vendor
 
 # Architecture specific extensions/prefixes
 *.[568vq]
