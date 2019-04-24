@@ -10,29 +10,25 @@ import (
 	"github.com/lib/pq"
 )
 
-var db *sqlx.DB
+type DB struct {
+	*sqlx.DB
+}
 
 // TODO should be using context for all queries
 
 // TODO How to not require an init to do this
-func Connect(ctx context.Context, dataSourceName string) (*sqlx.DB, error) {
-	newDB, err := sqlx.Connect("postgres", dataSourceName)
+func Connect(ctx context.Context, dataSourceName string) (*DB, error) {
+	db, err := sqlx.Connect("postgres", dataSourceName)
 	if err != nil {
 		return nil, err
 	}
-	if err = newDB.PingContext(ctx); err != nil {
+	if err = db.PingContext(ctx); err != nil {
 		return nil, err
 	}
-	db = newDB
-	return db, err
+	return &DB{db}, nil
 }
 
-// TODO is there any point to not exporting a var containing a pointer?
-func DB() *sqlx.DB {
-	return db
-}
-
-func InsertMetadata(meta *Metadata) error {
+func (db *DB) InsertMetadata(meta *Metadata) error {
 	if db == nil {
 		return errors.New("no db connected")
 	}
@@ -46,7 +42,7 @@ func InsertMetadata(meta *Metadata) error {
 	return err
 }
 
-func GetMetadataByID(id string) (*Metadata, error) {
+func (db *DB) GetMetadataByID(id string) (*Metadata, error) {
 	if db == nil {
 		return nil, errors.New("no db connected")
 	}
@@ -59,7 +55,7 @@ func GetMetadataByID(id string) (*Metadata, error) {
 	return meta, nil
 }
 
-func GetMetadataByAuthKey(authKey string) (*Metadata, error) {
+func (db *DB) GetMetadataByAuthKey(authKey string) (*Metadata, error) {
 	if db == nil {
 		return nil, errors.New("no db connected")
 	}
@@ -72,7 +68,7 @@ func GetMetadataByAuthKey(authKey string) (*Metadata, error) {
 	return meta, nil
 }
 
-func DeleteMetadataByAuthKey(authKey string) error {
+func (db *DB) DeleteMetadataByAuthKey(authKey string) error {
 	if db == nil {
 		return errors.New("no db connected")
 	}
@@ -90,7 +86,7 @@ func DeleteMetadataByAuthKey(authKey string) error {
 	return nil
 }
 
-func UpdateMetadata(meta *Metadata) error {
+func (db *DB) UpdateMetadata(meta *Metadata) error {
 	if db == nil {
 		return errors.New("no db connected")
 	}
@@ -117,11 +113,11 @@ func UpdateMetadata(meta *Metadata) error {
 // NewInsertedMetadata returns new *Metadata that has been successfully inserted into db
 // TODO create an entirely new struct each time not efficient
 // TODO atleast unset old struct?
-func NewInsertedMetadata(tries int) (*Metadata, error) {
+func (db *DB) NewInsertedMetadata(tries int) (*Metadata, error) {
 	var meta *Metadata
 	for i := 0; i < tries; i++ {
 		meta = NewMetadata()
-		err := InsertMetadata(meta)
+		err := db.InsertMetadata(meta)
 		if IsUniqueViolation(err) {
 			continue
 		}

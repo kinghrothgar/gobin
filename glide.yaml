@@ -14,3 +14,10 @@ import:
 - package: github.com/lib/pq
   version: v1.1.0
 - package: golang.org/x/crypto
+- package: github.com/gorilla/mux
+  version: v1.7.1
+- package: github.com/levenlabs/go-llog
+  version: 20ef6be7fff9649dd6fed0a8fc86ab80bba73445
+# Needed by go-llog
+- package: github.com/levenlabs/errctx
+  version: 0efb848a6296933d8ebca66e669576867096729f

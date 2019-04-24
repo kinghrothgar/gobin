@@ -39,3 +39,6 @@ _cgo_export.*
 _testmain.go
 
 *.exe
+
+# CockroachDB data
+cockroach-data

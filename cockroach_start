@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# docker network create -d bridge roachnet
+docker run -d \
+--rm \
+--name=roach1 \
+--hostname=roach1 \
+-p 26257:26257 -p 8080:8080  \
+-v "${PWD}/cockroach-data/roach1:/cockroach/cockroach-data"  \
+cockroachdb/cockroach:v2.1.6 start \
+    --insecure

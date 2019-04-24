@@ -54,6 +54,21 @@ func (w *Reader) Close() error {
 	return nil
 }
 
+func NewKey(pass string, salt string) ([]byte, error) {
+	return scrypt.Key([]byte(pass), []byte(salt), 32768, 8, 1, 32)
+}
+
+func NewObject(ctx context.Context, bucketName string, path string) (*Object, error) {
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	bkt := client.Bucket(bucketName)
+	return &Object{
+		bkt.Object(path),
+	}, nil
+}
+
 func (obj *Object) NewWriter(ctx context.Context) (*Writer, error) {
 	w := obj.ObjectHandle.NewWriter(ctx)
 	zw := zstd.NewWriter(w)
@@ -114,19 +129,4 @@ func (obj *Object) UpdateMetadata(ctx context.Context, meta map[string]string) (
 		return nil, err
 	}
 	return attrs.Metadata, nil
-}
-
-func NewObject(ctx context.Context, bucketName string, path string) (*Object, error) {
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	bkt := client.Bucket(bucketName)
-	return &Object{
-		bkt.Object(path),
-	}, nil
-}
-
-func NewKey(pass string, salt string) ([]byte, error) {
-	return scrypt.Key([]byte(pass), []byte(salt), 32768, 8, 1, 32)
 }

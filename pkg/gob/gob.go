@@ -10,19 +10,33 @@ import (
 	"github.com/kinghrothgar/gobin/pkg/store"
 )
 
+// TODO review concurrency
+// TODO review ctx
+
+// TODO how to pass this in
 var bucketName = "gobin-io-test"
 
-// TODO review concurrency
+type Gob struct {
+	ctx context.Context
+	db  *db.DB
+}
+
+func NewGob(ctx context.Context, db *db.DB) *Gob {
+	return &Gob{ctx, db}
+}
 
 // TODO does object dangle of upload not completed?
-func Upload(ctx context.Context, reader io.Reader, encryptKey string) (*db.Metadata, error) {
-	meta, err := db.NewInsertedMetadata(3)
-	obj, err := store.NewObject(ctx, bucketName, meta.ID)
+func (gob *Gob) Upload(reader io.Reader, encryptKey string) (*db.Metadata, error) {
+	meta, err := gob.db.NewInsertedMetadata(3)
+	if err != nil {
+		return nil, err
+	}
+	obj, err := store.NewObject(gob.ctx, bucketName, meta.ID)
 	if err != nil {
 		return nil, err
 	}
 	// TODO: should I be checking if it exists or let metadata be master
-	if exists, err := obj.Exists(ctx); err != nil {
+	if exists, err := obj.Exists(gob.ctx); err != nil {
 		return nil, err
 	} else if exists {
 		return nil, fmt.Errorf("store %s already exists", meta.ID)
@@ -32,7 +46,7 @@ func Upload(ctx context.Context, reader io.Reader, encryptKey string) (*db.Metad
 		meta.Encrypted = true
 		obj.Key(encryptKey, "saltsaltsalt")
 	}
-	w, err := obj.NewWriter(ctx)
+	w, err := obj.NewWriter(gob.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get store %s writer: %v", meta.ID, err)
 	}
@@ -40,11 +54,11 @@ func Upload(ctx context.Context, reader io.Reader, encryptKey string) (*db.Metad
 	// Sniff content type
 	// Only the first 512 bytes are used to sniff the content type.
 	buffer := make([]byte, 512)
-	_, err = reader.Read(buffer)
+	bytesRead, err := reader.Read(buffer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read first 512 bytes of %s: %v", meta.ID, err)
 	}
-	meta.SetContentType(buffer)
+	meta.SetContentType(buffer[:bytesRead])
 
 	// Write to storage
 	w.Write(buffer)
@@ -52,17 +66,18 @@ func Upload(ctx context.Context, reader io.Reader, encryptKey string) (*db.Metad
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy %s to store: %v", meta.ID, err)
 	}
+	meta.Size += int64(bytesRead)
 	if err := w.Close(); err != nil {
 		return nil, fmt.Errorf("failed to close %s store: %v", meta.ID, err)
 	}
-	if err := db.UpdateMetadata(meta); err != nil {
+	if err := gob.db.UpdateMetadata(meta); err != nil {
 		return meta, fmt.Errorf("failed to update %s metadata: %v", meta.ID, err)
 	}
 	return meta, nil
 }
 
-func Download(ctx context.Context, writer io.Writer, id string, encryptKey string) (*db.Metadata, error) {
-	meta, err := db.GetMetadataByID(id)
+func (gob *Gob) Download(writer io.Writer, id string, encryptKey string) (*db.Metadata, error) {
+	meta, err := gob.db.GetMetadataByID(id)
 	// TODO probably should return typed error if id does not exist
 	if err != nil {
 		return nil, err
@@ -70,11 +85,11 @@ func Download(ctx context.Context, writer io.Writer, id string, encryptKey strin
 	if meta.ExpireDate.Valid && time.Now().After(meta.ExpireDate.Time) {
 		return nil, fmt.Errorf("%s expired", meta.ID)
 	}
-	obj, err := store.NewObject(ctx, bucketName, meta.ID)
+	obj, err := store.NewObject(gob.ctx, bucketName, meta.ID)
 	if err != nil {
 		return nil, err
 	}
-	if exists, err := obj.Exists(ctx); err != nil {
+	if exists, err := obj.Exists(gob.ctx); err != nil {
 		return nil, err
 	} else if !exists {
 		return nil, fmt.Errorf("store %s does not exist", meta.ID)
@@ -87,7 +102,7 @@ func Download(ctx context.Context, writer io.Writer, id string, encryptKey strin
 		obj.Key(encryptKey, "saltsaltsalt")
 	}
 
-	r, err := obj.NewReader(ctx)
+	r, err := obj.NewReader(gob.ctx)
 	if err != nil {
 		// TODO return typed error for CustomerEncryptionKeyIsIncorrect 400
 		return nil, fmt.Errorf("failed to get store %s reader: %v", meta.ID, err)
@@ -101,8 +116,8 @@ func Download(ctx context.Context, writer io.Writer, id string, encryptKey strin
 	return meta, nil
 }
 
-func Expire(ctx context.Context, authKey string) (*db.Metadata, error) {
-	meta, err := db.GetMetadataByAuthKey(authKey)
+func (gob *Gob) Expire(authKey string) (*db.Metadata, error) {
+	meta, err := gob.db.GetMetadataByAuthKey(authKey)
 	// TODO probably should return typed error if id does not exist
 	if err != nil {
 		return nil, err
@@ -111,27 +126,27 @@ func Expire(ctx context.Context, authKey string) (*db.Metadata, error) {
 		return nil, fmt.Errorf("%s expired", meta.ID)
 	}
 	meta.SetExpireDate(time.Now())
-	if err = db.UpdateMetadata(meta); err != nil {
+	if err = gob.db.UpdateMetadata(meta); err != nil {
 		return nil, fmt.Errorf("failed to expire %s gob: %v", meta.ID, err)
 	}
 	return meta, nil
 }
 
-func Delete(ctx context.Context, authKey string) error {
-	meta, err := db.GetMetadataByAuthKey(authKey)
+func (gob *Gob) Delete(authKey string) error {
+	meta, err := gob.db.GetMetadataByAuthKey(authKey)
 	// TODO probably should return typed error if id does not exist
 	if err != nil {
 		return err
 	}
-	obj, err := store.NewObject(ctx, bucketName, meta.ID)
+	obj, err := store.NewObject(gob.ctx, bucketName, meta.ID)
 
 	if err != nil {
 		return err
 	}
-	if exists, err := obj.Exists(ctx); err != nil {
+	if exists, err := obj.Exists(gob.ctx); err != nil {
 		return err
 	} else if exists {
-		obj.Delete(ctx)
+		obj.Delete(gob.ctx)
 	}
-	return db.DeleteMetadataByAuthKey(authKey)
+	return gob.db.DeleteMetadataByAuthKey(authKey)
 }
