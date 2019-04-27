@@ -13,11 +13,23 @@ import (
 	"github.com/levenlabs/go-llog"
 )
 
+var (
+	shutDownGracePeriod = time.Second * 120
+	textTmplsPath       = "./templates/textTemplates.tmpl"
+	htmlTmplsPath       = "./templates/htmlTemplates.tmpl"
+	domain              = "127.0.0.1:8080"
+	staticDir           = "./static/"
+)
+
 func main() {
-	var shutDownGracePeriod = time.Second * 60
 
 	ctx := context.Background()
 	llog.SetLevelFromString("DEBUG")
+
+	tmpls, err := gobin.NewTemplates(htmlTmplsPath, textTmplsPath, domain)
+	if err != nil {
+		llog.Fatal("failed to load templates", llog.ErrKV(err))
+	}
 
 	db, err := db.Connect(ctx, "host=127.0.0.1 port=26257 user=gobin dbname=gobin sslmode=disable")
 	if err != nil {
@@ -25,10 +37,15 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	routeToDir(r, "/browserconfig.xml", staticDir)
+	routeToDir(r, "/robots.txt", staticDir)
+	routeToDir(r, "/sitemap.xml", staticDir)
+
+	r.Handle("/", gobin.GetRootHandler(db, tmpls)).Methods("GET")
 	r.Handle("/", gobin.PostGobHandler(db)).Methods("POST")
-	r.Handle("/{id}", gobin.GetGobHandler(db)).Methods("GET")
-	//r.HandleFunc("/articles/{category}/", ArticlesCategoryHandler)
-	//r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler)
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	r.Handle("/{id:[a-zA-Z0-9]}", gobin.GetGobHandler(db)).Methods("GET")
+	r.Handle("/expire/{authKey}", gobin.GetExpireHandler(db)).Methods("GET")
 	//mux.Get("/", http.HandlerFunc(handler.GetRoot))
 	//mux.Get("/:uid", http.HandlerFunc(handler.GetGob))
 	//mux.Get("/delete/:token", http.HandlerFunc(handler.DelGob))
@@ -41,9 +58,9 @@ func main() {
 
 	srv := &http.Server{
 		Addr: "127.0.0.1:8080",
-		// Good practice to set timeouts to avoid Slowloris attacks.
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
+		// Need to figure out how high to set this
+		WriteTimeout: time.Second * 120,
+		ReadTimeout:  time.Second * 120,
 		IdleTimeout:  time.Second * 60,
 		Handler:      r, // Pass our instance of gorilla/mux in.
 	}
@@ -79,5 +96,10 @@ func main() {
 	// Optionally, you could run srv.Shutdown in a goroutine and block on
 	// <-ctx.Done() if your application should wait for other services
 	// to finalize based on context cancellation.
+	llog.Flush()
 	os.Exit(0)
+}
+
+func routeToDir(r *mux.Router, path string, dir string) {
+	r.PathPrefix(path).Handler(http.FileServer(http.Dir(dir)))
 }

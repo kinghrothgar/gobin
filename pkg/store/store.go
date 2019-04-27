@@ -6,6 +6,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/DataDog/zstd"
+	"github.com/levenlabs/errctx"
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -24,6 +25,26 @@ type Object struct {
 	*storage.ObjectHandle
 }
 
+// used to inline the Reader interface
+type readerFunc func(p []byte) (n int, err error)
+
+func (rf readerFunc) Read(p []byte) (n int, err error) {
+	return rf(p)
+}
+
+func Copy(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+	n, err := io.Copy(dst, readerFunc(func(p []byte) (int, error) {
+
+		select {
+		case <-ctx.Done():
+			return 0, errctx.Mark(ctx.Err())
+		default:
+			return src.Read(p)
+		}
+	}))
+	return n, errctx.Mark(err)
+}
+
 // Write writes a compressed form of p to the underlying io.Writer.
 func (w *Writer) Write(p []byte) (int, error) {
 	return w.writer.Write(p)
@@ -39,7 +60,7 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-// Reade reades a compressed form of p to the underlying io.Reader.
+// Read reades a compressed form of p to the underlying io.Reader.
 func (w *Reader) Read(p []byte) (int, error) {
 	return w.reader.Read(p)
 }
@@ -69,13 +90,13 @@ func NewObject(ctx context.Context, bucketName string, path string) (*Object, er
 	}, nil
 }
 
-func (obj *Object) NewWriter(ctx context.Context) (*Writer, error) {
+func (obj *Object) NewWriter(ctx context.Context) *Writer {
 	w := obj.ObjectHandle.NewWriter(ctx)
 	zw := zstd.NewWriter(w)
 	return &Writer{
 		writer:  zw,
 		closers: []io.WriteCloser{zw, w},
-	}, nil
+	}
 }
 
 func (obj *Object) NewReader(ctx context.Context) (*Reader, error) {

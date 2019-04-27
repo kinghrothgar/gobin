@@ -34,10 +34,10 @@ func (db *DB) InsertMetadata(meta *Metadata) error {
 	}
 	q := "INSERT INTO gob_metadata (" +
 		"id, auth_key, encrypted, create_date, " +
-		"expire_date, size, owner_id, content_type)" +
+		"expire_date, size, owner_id, content_type, filename)" +
 		"VALUES(" +
 		":id, :auth_key, :encrypted, :create_date, " +
-		":expire_date, :size, :owner_id, :content_type)"
+		":expire_date, :size, :owner_id, :content_type, :filename)"
 	_, err := db.NamedExec(q, meta)
 	return err
 }
@@ -92,9 +92,9 @@ func (db *DB) UpdateMetadata(meta *Metadata) error {
 	}
 	q := "UPDATE gob_metadata SET (" +
 		"encrypted, create_date, expire_date, " +
-		"size, owner_id, content_type) = (" +
+		"size, owner_id, content_type, filename) = (" +
 		":encrypted, :create_date, :expire_date, " +
-		":size, :owner_id, :content_type) " +
+		":size, :owner_id, :content_type, :filename) " +
 		"WHERE id = :id"
 	result, err := db.NamedExec(q, meta)
 	if err != nil {

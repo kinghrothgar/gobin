@@ -1,1 +1,1 @@
-export GOOGLE_APPLICATION_CREDENTIALS="/Users/lukejolly/git/gobin/service-account.json"
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/git/gobin/service-account.json"

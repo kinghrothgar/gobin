@@ -7,6 +7,7 @@ create table gobin.gob_metadata (
 	expire_date  TIMESTAMP,
 	size        INT,
 	owner_id     INT,
+    filename     STRING,
 	content_type STRING
 );
 

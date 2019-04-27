@@ -1,0 +1,184 @@
+{{define "icons"}}<link rel="apple-touch-icon" sizes="57x57" href="/static/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/static/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/static/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/static/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/static/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/static/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/static/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/apple-touch-icon-152x152.png">
+    <link rel="icon" type="image/png" href="/static/img/favicon-196x196.png" sizes="196x196">
+    <link rel="icon" type="image/png" href="/static/img/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/static/img/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/static/img/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/static/img/favicon-32x32.png" sizes="32x32">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/static/img/mstile-144x144.png">{{end}}
+
+{{define "head"}}<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="/static/css/inconsolata.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    {{template "icons"}}
+    <title>{{.Title}}</title>
+</head>{{end}}
+
+{{define "monokaiHead"}}<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="/static/css/inconsolata.css">
+    <link rel="stylesheet" href="/static/css/monokai.css">
+    {{template "icons"}}
+    <title>{{.Title}}</title>
+</head>{{end}}
+
+{{define "tabs"}}<div class="tabs">
+    <ul>
+        <li{{if .Home}} class="selected-tab"{{end}}><a href="/">man</a></li>
+        <li{{if .Form}} class="selected-tab"{{end}}><a href="/new/gob">upload</a></li>
+        <li{{if .Top}} class="selected-tab"{{end}}><a href="/">hordes</a></li>
+    </ul>
+</div>{{end}}
+
+{{define "hordeBody"}}
+<body>
+<pre>
+{{$domain := .Domain}}{{$scheme := .Scheme}}{{with .Horde}}{{range .}}<a href="{{$scheme}}://{{$domain}}/{{.UID}}">{{$scheme}}://{{$domain}}/{{.UID}}</a>    {{.Created}}
+{{end}}{{end}}
+</pre>
+</body>{{end}}
+
+{{define "homeBody"}}
+<body>
+{{template "tabs" .Tabs}}
+<div class="content">
+<span class="code-block">gobin(1)                             GOBIN                             gobin(1)
+
+NAME
+    gobin: command line pastebin implemented by gobin written in go.
+    STILL IN DEVELOPMENT, ANYTHING UPLOADED MAY BE DELETED AT ANY TIME.
+
+SYNOPSIS
+    Normal Upload:
+      &lt;command&gt; | curl -F 'gob=&lt;-' https://{{.Domain}}
+    Horde Upload:
+      &lt;command&gt; | curl -F 'gob=&lt;-' https://{{.Domain}}/&lt;horde&gt;
+
+DESCRIPTION
+    Uploads output of &lt;command&gt; to {{.Domain}} or {{.Domain}}/&lt;horde&gt; and returns
+    link to the gob.  All gobs pasted to a horde (a group of gobs or gobins)
+    can be seen by going to https://{{.Domain}}/horde/&lt;horde&gt;.
+
+    Add ?<lang> to resulting url for line numbers and syntax highlighting.  All
+    <a href="/static/lexers.txt">lexers</a> for Pygments version 1.6 are valid.  Github style markdown is
+    rendered instead of highlighting using the same method (?markdown).
+
+    &lt;horde&gt; can be any combination of alphanumeric characters up to 50
+
+    Images and pdfs should work well also.
+
+EXAMPLES
+    Normal Upload:
+    ~$ echo "Gobin is awesome" | curl -F 'gob=&lt;-' https://{{.Domain}}
+       https://{{.Domain}}/VZiY
+    ~$ firefox https://{{.Domain}}/VZiY
+
+    Syntax Highlighting:
+    ~$ firefox https://{{.Domain}}/VZiY?go
+
+    Horde Upload:
+    ~$ cat hatersgonnahate.gif | curl -F 'gob=&lt;-' https://{{.Domain}}/gifs
+       https://{{.Domain}}/VZiY
+    ~$ firefox https://{{.Domain}}/horde/gifs
+
+SEE ALSO
+    <a href="https://github.com/kinghrothgar/gobin">https://github.com/kinghrothgar/gobin</a>
+    <a href="https://github.com/kinghrothgar/gobin-scripts">https://github.com/kinghrothgar/gobin-scripts</a>
+    <form action="/new/gob"><input type="submit" value="Upload Form"></form>
+</span>
+</div>
+</body>
+{{end}}
+
+{{define "homePage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+{{template "homeBody" .}}
+</html>
+{{end}}
+
+{{define "hordePage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+{{template "hordeBody" .}}
+</html>
+{{end}}
+
+{{define "gobPage"}}<!DOCTYPE html>
+<html>
+{{template "monokaiHead" .}}
+<body>
+{{.Data}}
+</body>
+</html>
+{{end}}
+
+{{define "formPage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+<body>
+{{template "tabs" .Tabs}}
+<div class="content">
+    <form action="/" method="POST">
+        <textarea name="gob" cols="83" rows="24"></textarea><br>
+        Horde name (optional): <input type="text" name="horde"><br>
+        <button type="submit">Upload</button>
+    </form>
+</div>
+</body>
+</html>
+{{end}}
+
+{{define "urlPage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+<body>
+{{template "tabs" .Tabs}}
+<div class="content">
+<span class="code-block"><a href="{{.Scheme}}://{{.Domain}}/{{.UID}}">{{.Scheme}}://{{.Domain}}/{{.UID}}</a>
+<a href="{{.Scheme}}://{{.Domain}}/delete/{{.DelUID}}">{{.Scheme}}://{{.Domain}}/delete/{{.DelUID}}</a>
+</span>
+</div>
+</body>
+</html>
+{{end}}
+
+{{define "messPage"}}<!DOCTYPE html>
+<html>
+{{template "head" .}}
+<body>
+{{template "tabs" .Tabs}}
+<div class="content">
+<span class="code-block">{{.Message}}</span>
+</div>
+</body>
+</html>
+{{end}}
+
+{{define "mdPage"}}<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="/static/css/swiss.css">
+    {{template "icons"}}
+    <title>{{.Title}}</title>
+</head>
+<body>
+    <div id="mdText" style="display:none">{{.Data}}</div>
+    <div id="mdHTML"></div>
+    <script src="/static/js/markdown.js"></script>
+    <script>
+        var $ = function (id) { return document.getElementById(id); };
+        $("mdHTML").innerHTML = markdown.toHTML($("mdText").innerHTML);
+    </script>
+</body>
+</html>
+{{end}}

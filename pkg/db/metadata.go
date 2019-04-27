@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"math/rand"
 	"net/http"
 	"time"
@@ -11,14 +12,15 @@ import (
 // Metadata for a gob
 // TODO I don't really want ID, AuthKey, and ContentType to be exported, but then I can't use them in sqlx
 type Metadata struct {
-	ID          string      `db:"id"`
-	AuthKey     string      `db:"auth_key"`
-	Encrypted   bool        `db:"encrypted"`
-	CreateDate  time.Time   `db:"create_date"`
-	ExpireDate  pq.NullTime `db:"expire_date"`
-	Size        int64       `db:"size"`
-	OwnerID     int         `db:"owner_id"`
-	ContentType string      `db:"content_type"`
+	ID          string         `db:"id"`
+	AuthKey     string         `db:"auth_key"`
+	Encrypted   bool           `db:"encrypted"`
+	CreateDate  time.Time      `db:"create_date"`
+	ExpireDate  pq.NullTime    `db:"expire_date"`
+	Size        int64          `db:"size"`
+	OwnerID     int            `db:"owner_id"`
+	ContentType string         `db:"content_type"`
+	Filename    sql.NullString `db:"filename"`
 }
 
 const (
@@ -65,5 +67,15 @@ func (g *Metadata) SetExpireDate(t time.Time) {
 	g.ExpireDate = pq.NullTime{
 		Time:  t,
 		Valid: true,
+	}
+}
+
+func (g *Metadata) SetFilename(filename string) {
+	if filename == "" {
+		return
+	}
+	g.Filename = sql.NullString{
+		String: filename,
+		Valid:  true,
 	}
 }
