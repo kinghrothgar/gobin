@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,7 +18,7 @@ var (
 	shutDownGracePeriod = time.Second * 120
 	textTmplsPath       = "./templates/textTemplates.tmpl"
 	htmlTmplsPath       = "./templates/htmlTemplates.tmpl"
-	domain              = "127.0.0.1:8080"
+	domain              = "127.0.0.1:8081"
 	staticDir           = "./static/"
 )
 
@@ -25,6 +26,8 @@ func main() {
 
 	ctx := context.Background()
 	llog.SetLevelFromString("DEBUG")
+
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	tmpls, err := gobin.NewTemplates(htmlTmplsPath, textTmplsPath, domain)
 	if err != nil {
@@ -42,10 +45,10 @@ func main() {
 	routeToDir(r, "/sitemap.xml", staticDir)
 
 	r.Handle("/", gobin.GetRootHandler(db, tmpls)).Methods("GET")
-	r.Handle("/", gobin.PostGobHandler(db)).Methods("POST")
+	r.Handle("/", gobin.PostGobHandler(db, tmpls)).Methods("POST")
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 	r.Handle("/{id:[a-zA-Z0-9]}", gobin.GetGobHandler(db)).Methods("GET")
-	r.Handle("/expire/{authKey}", gobin.GetExpireHandler(db)).Methods("GET")
+	r.Handle("/expire/{secret}", gobin.GetExpireHandler(db, tmpls)).Methods("GET")
 	//mux.Get("/", http.HandlerFunc(handler.GetRoot))
 	//mux.Get("/:uid", http.HandlerFunc(handler.GetGob))
 	//mux.Get("/delete/:token", http.HandlerFunc(handler.DelGob))
@@ -57,7 +60,7 @@ func main() {
 	//mux.Post("/:horde", http.HandlerFunc(handler.PostHordeGob))
 
 	srv := &http.Server{
-		Addr: "127.0.0.1:8080",
+		Addr: "127.0.0.1:8081",
 		// Need to figure out how high to set this
 		WriteTimeout: time.Second * 120,
 		ReadTimeout:  time.Second * 120,

@@ -41,7 +41,7 @@
 {{define "hordeBody"}}
 <body>
 <pre>
-{{$domain := .Domain}}{{$scheme := .Scheme}}{{with .Horde}}{{range .}}<a href="{{$scheme}}://{{$domain}}/{{.UID}}">{{$scheme}}://{{$domain}}/{{.UID}}</a>    {{.Created}}
+{{$domain := .Domain}}{{$scheme := .Scheme}}{{with .Horde}}{{range .}}<a href="{{$scheme}}://{{$domain}}/{{.ID}}">{{$scheme}}://{{$domain}}/{{.ID}}</a>    {{.Created}}
 {{end}}{{end}}
 </pre>
 </body>{{end}}
@@ -57,42 +57,21 @@ NAME
     STILL IN DEVELOPMENT, ANYTHING UPLOADED MAY BE DELETED AT ANY TIME.
 
 SYNOPSIS
-    Normal Upload:
-      &lt;command&gt; | curl -F 'gob=&lt;-' https://{{.Domain}}
-    Horde Upload:
-      &lt;command&gt; | curl -F 'gob=&lt;-' https://{{.Domain}}/&lt;horde&gt;
+    Normal Upload, replace &lt;FILENAME&gt;:
+      curl -F 'g=@&lt;FILENAME&gt;' https://{{.Domain}}
+    Steam Upload:
+      &lt;command&gt; | curl -F 'g=@-' https://{{.Domain}}
+    Filename Steam Upload, replace &lt;FILENAME&gt;:
+      &lt;command&gt; | curl -F 'g=@-' -F 'f=&lt;FILENAME&gt;' https://{{.Domain}}
 
 DESCRIPTION
-    Uploads output of &lt;command&gt; to {{.Domain}} or {{.Domain}}/&lt;horde&gt; and returns
-    link to the gob.  All gobs pasted to a horde (a group of gobs or gobins)
-    can be seen by going to https://{{.Domain}}/horde/&lt;horde&gt;.
-
-    Add ?<lang> to resulting url for line numbers and syntax highlighting.  All
-    <a href="/static/lexers.txt">lexers</a> for Pygments version 1.6 are valid.  Github style markdown is
-    rendered instead of highlighting using the same method (?markdown).
-
-    &lt;horde&gt; can be any combination of alphanumeric characters up to 50
-
-    Images and pdfs should work well also.
+    TODO
 
 EXAMPLES
-    Normal Upload:
-    ~$ echo "Gobin is awesome" | curl -F 'gob=&lt;-' https://{{.Domain}}
-       https://{{.Domain}}/VZiY
-    ~$ firefox https://{{.Domain}}/VZiY
-
-    Syntax Highlighting:
-    ~$ firefox https://{{.Domain}}/VZiY?go
-
-    Horde Upload:
-    ~$ cat hatersgonnahate.gif | curl -F 'gob=&lt;-' https://{{.Domain}}/gifs
-       https://{{.Domain}}/VZiY
-    ~$ firefox https://{{.Domain}}/horde/gifs
+    TODO
 
 SEE ALSO
-    <a href="https://github.com/kinghrothgar/gobin">https://github.com/kinghrothgar/gobin</a>
-    <a href="https://github.com/kinghrothgar/gobin-scripts">https://github.com/kinghrothgar/gobin-scripts</a>
-    <form action="/new/gob"><input type="submit" value="Upload Form"></form>
+    https://github.com/kinghrothgar/gobin
 </span>
 </div>
 </body>
@@ -143,8 +122,8 @@ SEE ALSO
 <body>
 {{template "tabs" .Tabs}}
 <div class="content">
-<span class="code-block"><a href="{{.Scheme}}://{{.Domain}}/{{.UID}}">{{.Scheme}}://{{.Domain}}/{{.UID}}</a>
-<a href="{{.Scheme}}://{{.Domain}}/delete/{{.DelUID}}">{{.Scheme}}://{{.Domain}}/delete/{{.DelUID}}</a>
+<span class="code-block"><a href="{{.Scheme}}://{{.Domain}}/{{.ID}}">{{.Scheme}}://{{.Domain}}/{{.ID}}</a>
+<a href="{{.Scheme}}://{{.Domain}}/delete/{{.Secrect}}">{{.Scheme}}://{{.Domain}}/delete/{{.Secrect}}</a>
 </span>
 </div>
 </body>

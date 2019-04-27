@@ -39,7 +39,7 @@ type URLPage struct {
 	Scheme  string
 	Title   string
 	ID      string
-	AuthKey string
+	Secret string
 	Tabs    *Tabs
 }
 
@@ -94,23 +94,23 @@ func (t *Templates) GetMessPage(contentType string, message string) ([]byte, err
 	return t.execute(contentType, "messPage", page)
 }
 
-func (t *Templates) GetURLPage(scheme, contentType, id, authKey string) ([]byte, error) {
+func (t *Templates) GetURLPage(scheme, contentType, id, secret string) ([]byte, error) {
 	tabs := &Tabs{Form: true}
 	page := &URLPage{
 		Domain:  t.domain,
 		Scheme:  scheme,
 		Title:   t.title,
 		ID:      id,
-		AuthKey: authKey,
+		Secret: secret,
 		Tabs:    tabs,
 	}
 	return t.execute(contentType, "urlPage", page)
 }
 
-// BuildURLs builds the urls given the scheme (http/https), id and authKey
-func (t *Templates) BuildURLs(scheme, id, authKey string) string {
+// BuildURLs builds the urls given the scheme (http/https), id and secret
+func (t *Templates) BuildURLs(scheme, id, secret string) string {
 	urls := scheme + "://" + t.domain + "/" + id + "\n"
-	urls += scheme + "://" + t.domain + "/expire/" + authKey + "\n"
+	urls += scheme + "://" + t.domain + "/expire/" + secret + "\n"
 	return urls
 }
 

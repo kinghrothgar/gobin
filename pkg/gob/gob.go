@@ -27,8 +27,8 @@ func NewGob(ctx context.Context, db *db.DB) *Gob {
 }
 
 // cleanUpMetadata deletes metadata and passes nil, error
-func (gob *Gob) failedUploadHelper(authKey string, err error) (*db.Metadata, error) {
-	gob.db.DeleteMetadataByAuthKey(authKey)
+func (gob *Gob) failedUploadHelper(secret string, err error) (*db.Metadata, error) {
+	gob.db.DeleteMetadataBySecret(secret)
 	return nil, err
 }
 
@@ -40,14 +40,14 @@ func (gob *Gob) Upload(reader io.Reader, encryptKey string, filename string) (*d
 	}
 	obj, err := store.NewObject(gob.ctx, bucketName, meta.ID)
 	if err != nil {
-		return gob.failedUploadHelper(meta.AuthKey, err)
+		return gob.failedUploadHelper(meta.Secret, err)
 	}
 	// TODO: should I be checking if it exists or let metadata be master
 	if exists, err := obj.Exists(gob.ctx); err != nil {
-		return gob.failedUploadHelper(meta.AuthKey, err)
+		return gob.failedUploadHelper(meta.Secret, err)
 	} else if exists {
 		err := errctx.Mark(fmt.Errorf("store %s already exists", meta.ID))
-		return gob.failedUploadHelper(meta.AuthKey, err)
+		return gob.failedUploadHelper(meta.Secret, err)
 	}
 	// TODO how to set salt?
 	if encryptKey != "" {
@@ -60,7 +60,7 @@ func (gob *Gob) Upload(reader io.Reader, encryptKey string, filename string) (*d
 	buffer := make([]byte, 512)
 	bytesRead, err := reader.Read(buffer)
 	if err != nil {
-		return gob.failedUploadHelper(meta.AuthKey, errctx.Mark(err))
+		return gob.failedUploadHelper(meta.Secret, errctx.Mark(err))
 	}
 	meta.SetContentType(buffer[:bytesRead])
 
@@ -69,13 +69,13 @@ func (gob *Gob) Upload(reader io.Reader, encryptKey string, filename string) (*d
 	w.Write(buffer)
 	meta.Size, err = store.Copy(gob.ctx, w, reader)
 	if err != nil {
-		return gob.failedUploadHelper(meta.AuthKey, errctx.Mark(err))
+		return gob.failedUploadHelper(meta.Secret, errctx.Mark(err))
 	}
 	meta.Size += int64(bytesRead)
 	if err := w.Close(); err != nil {
 		// TODO this could leave a dangling storage obj?
 		err = errctx.Mark(fmt.Errorf("failed to close %s store: %v", meta.ID, err))
-		return gob.failedUploadHelper(meta.AuthKey, err)
+		return gob.failedUploadHelper(meta.Secret, err)
 	}
 
 	// Update metadata
@@ -132,8 +132,8 @@ func (gob *Gob) Download(w io.Writer, meta *db.Metadata, encryptKey string) erro
 	return nil
 }
 
-func (gob *Gob) Expire(authKey string) (*db.Metadata, error) {
-	meta, err := gob.db.GetMetadataByAuthKey(authKey)
+func (gob *Gob) Expire(secret string) (*db.Metadata, error) {
+	meta, err := gob.db.GetMetadataBySecret(secret)
 	// TODO probably should return typed error if id does not exist
 	if err != nil {
 		return nil, err
@@ -148,8 +148,8 @@ func (gob *Gob) Expire(authKey string) (*db.Metadata, error) {
 	return meta, nil
 }
 
-func (gob *Gob) Delete(authKey string) error {
-	meta, err := gob.db.GetMetadataByAuthKey(authKey)
+func (gob *Gob) Delete(secret string) error {
+	meta, err := gob.db.GetMetadataBySecret(secret)
 	// TODO probably should return typed error if id does not exist
 	if err != nil {
 		return err
@@ -164,5 +164,5 @@ func (gob *Gob) Delete(authKey string) error {
 	} else if exists {
 		obj.Delete(gob.ctx)
 	}
-	return gob.db.DeleteMetadataByAuthKey(authKey)
+	return gob.db.DeleteMetadataBySecret(secret)
 }

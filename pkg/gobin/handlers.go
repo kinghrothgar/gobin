@@ -1,7 +1,6 @@
 package gobin
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -35,7 +34,7 @@ func GetRootHandler(db *db.DB, tmpls *Templates) http.Handler {
 }
 
 // TODO investigate whether curl loads file into memory when using @ or @-
-func PostGobHandler(db *db.DB) http.Handler {
+func PostGobHandler(db *db.DB, tmpls *Templates) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, gobHeader, err := r.FormFile("g")
 		if err != nil {
@@ -62,8 +61,15 @@ func PostGobHandler(db *db.DB) http.Handler {
 			returnHTTPInternalError(w, "failed to upload gob")
 			return
 		}
-		response := fmt.Sprintf("%s\ndelete/%s\n", meta.ID, meta.AuthKey)
-		w.Write([]byte(response))
+		pageType := getPageType(r)
+		pageBytes, err := tmpls.GetURLPage(getScheme(r), pageType, meta.ID, meta.Secret)
+		// TODO should delete gob if we can't tell users the id
+		if err != nil {
+			llog.Error("failed to upload gob", llog.KV{"err": err})
+			returnHTTPInternalError(w, "failed to upload gob")
+			return
+		}
+		w.Write(pageBytes)
 		llog.Debug("uploaded gob", llog.KV{"id": meta.ID})
 	})
 }
@@ -103,25 +109,28 @@ func GetGobHandler(db *db.DB) http.Handler {
 	})
 }
 
-func GetExpireHandler(db *db.DB) http.Handler {
+func GetExpireHandler(db *db.DB, tmpls *Templates) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		authKey, ok := vars["authKey"]
+		secret, ok := vars["secret"]
 		if !ok {
-			llog.Error("failed to get authKey in GetExpireHandler")
-			returnHTTPBadRequest(w, "expire request must have gob authKey in url")
+			llog.Error("failed to get secret in GetExpireHandler")
+			returnHTTPBadRequest(w, "expire request must have gob secret in url")
 			return
 		}
 		// TODO validate id
 		gob := gob.NewGob(r.Context(), db)
-		meta, err := gob.Expire(authKey)
+		meta, err := gob.Expire(secret)
 		// TODO figure out if it was user error
 		if err != nil {
 			llog.Warn("failed to expire gob", llog.KV{"err": err})
 			returnHTTPInternalError(w, "failed to expire gob")
 			return
 		}
-		w.Write([]byte(meta.ID + " gob expired\n"))
+
+		pageType := getPageType(r)
+		pageBytes, err := tmpls.GetMessPage(pageType, "successfully deleted "+meta.ID)
+		w.Write(pageBytes)
 		llog.Debug("expired gob", llog.KV{"id": meta.ID})
 	})
 }

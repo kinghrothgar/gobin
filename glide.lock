@@ -1,5 +1,5 @@
-hash: 691c2ff5f762d92534a119f942b8dc9a3da7010c012ef3557383605c6074af34
-updated: 2019-04-23T21:30:12.432045-04:00
+hash: 05960a1c88cc41d15e1c767c1c9b3cbcc6ab5fe3e885ceb67690f5af8716fec8
+updated: 2019-04-27T13:56:42.653334-04:00
 imports:
 - name: cloud.google.com/go
   version: fcb9a2d5f791d07be64506ab54434de65989d370
@@ -23,7 +23,7 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/googleapis/gax-go
-  version: beaecbbdd8af86aa3acf14180d53828ce69400b2
+  version: 9e334198cafcf7b281a9673424d7b1c3a02ebd50
   subpackages:
   - v2
 - name: github.com/gorilla/mux
@@ -64,7 +64,7 @@ imports:
   - trace/propagation
   - trace/tracestate
 - name: golang.org/x/crypto
-  version: de0752318171da717af4ce24d0a2e8626afaeb11
+  version: e84da0312774c21d64ee2317962ef669b27ffb41
   subpackages:
   - pbkdf2
   - scrypt
@@ -81,8 +81,6 @@ imports:
   - trace
 - name: golang.org/x/oauth2
   version: 9f3314589c9a9136388751d9adae6b0ed400978a
-  repo: git@github.com:golang/oauth2.git
-  vcs: git
   subpackages:
   - google
   - internal

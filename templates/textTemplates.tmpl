@@ -6,39 +6,24 @@ NAME
 
 SYNOPSIS
     Normal Upload, replace <FILENAME>:
-      curl -F 'g=@<FILENAME>-' https://{{.Domain}}
+      curl -F 'g=@<FILENAME>' https://{{.Domain}}
     Steam Upload:
-      <command> | curl -F 'g=@-' https://{{.Domain}}/<horde>
+      <command> | curl -F 'g=@-' https://{{.Domain}}
+    Filename Steam Upload, replace <FILENAME>:
+      <command> | curl -F 'g=@-' -F 'f=<FILENAME>' https://{{.Domain}}
 
 DESCRIPTION
-    Uploads output of <command> to {{.Domain}} or {{.Domain}}/<horde> and returns
-    link to the gob.  All gobs pasted to a horde (a group of gobs or gobins)
-    can be seen by going to https://{{.Domain}}/horde/<horde>.
-
-    Add ?<lang> to resulting url for line numbers and syntax highlighting.  All
-    lexers for Pygments version 1.6 are valid.  Github style markdown is
-    rendered instead of highlighting using the same method (?markdown).
-
-    <horde> can be any combination of alphanumeric characters up to 50
-
-    Images and pdfs should work well also.
+    TODO
 
 EXAMPLES
-    Normal Upload:
-    ~$ echo "Gobin is awesome" | curl -F 'gob=<-' https://{{.Domain}}
-       https://{{.Domain}}/VZiY
-    ~$ firefox https://{{.Domain}}/VZiY
-
-    Syntax Highlighting:
-    ~$ firefox https://{{.Domain}}/VZiY?go
+    TODO
 
 SEE ALSO
     https://github.com/kinghrothgar/gobin
-    https://github.com/kinghrothgar/gobin-scripts
 {{end}}
 
 {{define "urlPage"}}{{.Scheme}}://{{.Domain}}/{{.ID}}
-{{.Scheme}}://{{.Domain}}/delete/{{.AuthKey}}
+{{.Scheme}}://{{.Domain}}/expire/{{.Secret}}
 {{end}}
 
 {{define "messPage"}}{{.Message}}{{end}}

@@ -33,10 +33,10 @@ func (db *DB) InsertMetadata(meta *Metadata) error {
 		return errors.New("no db connected")
 	}
 	q := "INSERT INTO gob_metadata (" +
-		"id, auth_key, encrypted, create_date, " +
+		"id, secret, encrypted, create_date, " +
 		"expire_date, size, owner_id, content_type, filename)" +
 		"VALUES(" +
-		":id, :auth_key, :encrypted, :create_date, " +
+		":id, :secret, :encrypted, :create_date, " +
 		":expire_date, :size, :owner_id, :content_type, :filename)"
 	_, err := db.NamedExec(q, meta)
 	return err
@@ -55,24 +55,24 @@ func (db *DB) GetMetadataByID(id string) (*Metadata, error) {
 	return meta, nil
 }
 
-func (db *DB) GetMetadataByAuthKey(authKey string) (*Metadata, error) {
+func (db *DB) GetMetadataBySecret(secret string) (*Metadata, error) {
 	if db == nil {
 		return nil, errors.New("no db connected")
 	}
 	meta := NewMetadata()
 	// TODO: should select specify the coloumns
-	err := db.QueryRowx("SELECT * FROM gob_metadata WHERE auth_key=$1", authKey).StructScan(meta)
+	err := db.QueryRowx("SELECT * FROM gob_metadata WHERE secret=$1", secret).StructScan(meta)
 	if err != nil {
 		return nil, err
 	}
 	return meta, nil
 }
 
-func (db *DB) DeleteMetadataByAuthKey(authKey string) error {
+func (db *DB) DeleteMetadataBySecret(secret string) error {
 	if db == nil {
 		return errors.New("no db connected")
 	}
-	result, err := db.Exec("DELETE FROM gob_metadata WHERE auth_key=$1", authKey)
+	result, err := db.Exec("DELETE FROM gob_metadata WHERE secret=$1", secret)
 	if err != nil {
 		return err
 	}

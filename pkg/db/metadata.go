@@ -10,10 +10,10 @@ import (
 )
 
 // Metadata for a gob
-// TODO I don't really want ID, AuthKey, and ContentType to be exported, but then I can't use them in sqlx
+// TODO I don't really want ID, Secret, and ContentType to be exported, but then I can't use them in sqlx
 type Metadata struct {
 	ID          string         `db:"id"`
-	AuthKey     string         `db:"auth_key"`
+	Secret      string         `db:"secret"`
 	Encrypted   bool           `db:"encrypted"`
 	CreateDate  time.Time      `db:"create_date"`
 	ExpireDate  pq.NullTime    `db:"expire_date"`
@@ -26,8 +26,8 @@ type Metadata struct {
 const (
 	// IDLen length of gob id string
 	IDLen = 6
-	// AuthKeyLen length of gob authKey string
-	AuthKeyLen = 16
+	// SecretLen length of gob secret string
+	SecretLen = 16
 	// LegibleAlphanumeric is a string containing all alphanumeric characters except for ones that fonts can make indescernable: O, 0, l, 1
 	LegibleAlphanumeric = "ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
 )
@@ -48,10 +48,10 @@ func randomReadableString(n int) string {
 // NewMetadata returns new *Metadata instance
 func NewMetadata() *Metadata {
 	id := randomReadableString(IDLen)
-	authKey := randomReadableString(AuthKeyLen)
+	secret := randomReadableString(SecretLen)
 	return &Metadata{
 		ID:         id,
-		AuthKey:    authKey,
+		Secret:     secret,
 		CreateDate: time.Now(),
 	}
 }
