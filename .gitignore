@@ -23,6 +23,10 @@ push_up.sh
 _obj
 _test
 
+# SSL
+*.key
+*.crt
+
 # Golang Vendor
 /vendor
 
