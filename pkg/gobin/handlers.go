@@ -94,9 +94,9 @@ func GetGobHandler(db *db.DB) http.Handler {
 			returnHTTPNotFound(w, id+" gob not found")
 		}
 		// TODO will cause download in browser
-		if meta.Filename.Valid {
-			w.Header().Set("Content-Disposition", "attachment; filename="+meta.Filename.String)
-		}
+		//if meta.Filename.Valid {
+		//	w.Header().Set("Content-Disposition", "attachment; filename="+meta.Filename.String)
+		//}
 		w.Header().Set("Content-Type", meta.ContentType)
 		w.Header().Set("Content-Length", strconv.FormatInt(meta.Size, 10))
 		// TODO figure out if it was user error
